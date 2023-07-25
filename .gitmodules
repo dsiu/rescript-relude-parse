@@ -1,4 +1,0 @@
-[submodule "relude-parse"]
-	path = relude-parse
-	url = git@github.com:dsiu/relude-parse.git
-	branch = rescript-v10
