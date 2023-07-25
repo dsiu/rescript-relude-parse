@@ -31,11 +31,14 @@ jobs:
     - name: npm install
       run: npm install
       
+    - name: npm run cleantest
+      run: npm run cleantest
+
     - name: npm run cleancoverage
       run: npm run cleancoverage
 
-    - name: Coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        path-to-lcov: ./docs/coverage/lcov.info
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+#    - name: Coveralls
+#      uses: coverallsapp/github-action@master
+#      with:
+#        path-to-lcov: ./docs/coverage/lcov.info
+#        github-token: ${{ secrets.GITHUB_TOKEN }}
