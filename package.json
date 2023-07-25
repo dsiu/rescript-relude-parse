@@ -1,0 +1,47 @@
+{
+  "name": "relude-parse",
+  "version": "0.8.0",
+  "description": "Monadic parsing with Relude",
+  "main": "index.js",
+  "scripts": {
+    "clean": "rescript clean",
+    "build": "rescript build",
+    "watch": "rescript build -w",
+    "test": "jest",
+    "coverage": "jest --coverage --coverage-reporters=lcov --coverage-reporters=text --coverage-directory ./docs/coverage",
+    "cleanbuild": "npm run clean && npm run build",
+    "cleantest": "npm run cleanbuild && npm run test",
+    "cleancoverage": "npm run cleanbuild && npm run coverage"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/reazen/relude-parse.git"
+  },
+  "author": "Reazen",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/reazen/relude-parse/issues"
+  },
+  "homepage": "https://github.com/reazen/relude-parse#readme",
+  "peerDependencies": {
+    "bs-bastet": "github:dsiu/rescript-bastet#main",
+    "relude": "github:dsiu/rescript-relude#main"
+  },
+  "devDependencies": {
+    "rescript": "^10.0.0",
+    "@glennsl/bs-jest": "^0.5.1",
+    "bs-bastet": "github:dsiu/rescript-bastet#main",
+    "relude": "github:dsiu/rescript-relude#main"
+  },
+  "jest": {
+    "verbose": false,
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/testUtils/"
+    ],
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/testUtils/"
+    ]
+  }
+}
