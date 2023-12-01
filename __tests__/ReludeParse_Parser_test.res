@@ -4,13 +4,11 @@ open TestUtils
 open P.Infix
 
 describe("ReludeParse_Parser", () => {
-  test("runParser success", () =>
-    expect(P.runParser("9", P.anyDigit)) |> toEqual(Belt.Result.Ok("9"))
-  )
+  test("runParser success", () => expect(P.runParser("9", P.anyDigit))->toEqual(Ok("9")))
 
   test("runParser failure", () => {
     let expectedError: P.ParseError.t = ParseError("Expected a digit, but found character 'a'")
-    expect(P.runParser("a", P.anyDigit)) |> toEqual(Belt.Result.Error(expectedError))
+    expect(P.runParser("a", P.anyDigit))->toEqual(Error(expectedError))
   })
 
   test("pure", () => {
@@ -23,18 +21,18 @@ describe("ReludeParse_Parser", () => {
         str: "whatever",
       },
     })
-    expect(actual) |> toEqual(expected)
+    expect(actual)->toEqual(expected)
   })
 
   test("unit", () => testParse(P.unit, "whatever", (), {pos: 0, str: "whatever"}))
 
   test("fail", () => {
     let actual = P.fail("Fail!") |> P.unParser({pos: 0, str: "whatever"})
-    let expected: Belt.Result.t<P.success<_>, P.error> = Belt.Result.Error({
+    let expected: Belt.Result.t<P.success<_>, P.error> = Error({
       error: ParseError("Fail!"),
       pos: 0,
     })
-    expect(actual) |> toEqual(expected)
+    expect(actual)->toEqual(expected)
   })
 
   test("tries success", () =>
@@ -86,10 +84,10 @@ describe("ReludeParse_Parser", () => {
       posStringBeforeRef.contents,
       posStringAfterRef.contents,
       result,
-    )) |> toEqual(("1", P.PosString.make(0, "1"), P.PosString.make(1, "1"), Belt.Result.Ok("1")))
+    ))->toEqual(("1", P.PosString.make(0, "1"), P.PosString.make(1, "1"), Ok("1")))
   })
 
-  test("tapLog", () => expect(P.anyDigit |> P.tapLog |> P.runParser("1") |> ignore) |> toEqual())
+  test("tapLog", () => expect(P.anyDigit |> P.tapLog |> P.runParser("1") |> ignore)->toEqual())
 
   test("apply/<*>", () =>
     testParse(\"<*>"(P.pure(int_of_string), P.anyDigit), "9", 9, {pos: 1, str: "9"})
@@ -154,11 +152,11 @@ describe("ReludeParse_Parser", () => {
 
   test("throwError", () => {
     let actual = P.throwError(P.ParseError.make("hi")) |> P.unParser({pos: 0, str: "whatever"})
-    let expected: Belt.Result.t<P.success<_>, P.error> = Belt.Result.Error({
+    let expected: Belt.Result.t<P.success<_>, P.error> = Error({
       error: ParseError("hi"),
       pos: 0,
     })
-    expect(actual) |> toEqual(expected)
+    expect(actual)->toEqual(expected)
   })
 
   test("catchError", () =>
@@ -1189,7 +1187,7 @@ describe("ReludeParse_Parser", () => {
       \"<*>"(\"<$>"((a, b) => a + b, \"*>"(P.ws, P.anyDigitAsInt)), P.anyDigitAsInt) |> P.runParser(
         "   34",
       )
-    expect(x) |> toEqual(Belt.Result.Ok(7))
+    expect(x)->toEqual(Ok(7))
   })
 
   test("anyCharNotIn success", () =>

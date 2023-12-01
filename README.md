@@ -93,7 +93,7 @@ Success example:
 
 // Pipe operator |>
 
-P.anyDigit |> P.runParser("1") // Belt.Result.Ok("1")
+P.anyDigit |> P.runParser("1") // Ok("1")
 
 // Or normal function application
 
@@ -103,7 +103,7 @@ P.runParser("1", P.anyDigit)
 Failure example:
 
 ```reason
-P.anyDigit |> P.runParser("!") // Belt.Result.Error(ParseError("Expected a digit"))
+P.anyDigit |> P.runParser("!") // Error(ParseError("Expected a digit"))
 ```
 
 In the event of a failed parse, parsers will (in most cases) back-track so that an alternative
@@ -119,7 +119,7 @@ A `RelueParse.Parser` is a `functor`, so we can map a pure function over the par
 
 ```reason
 // Warning: int_of_string is unsafe (can throw) - this is just an example
-P.anyDigit |> P.map(int_of_string) |> P.runParser("1") // Belt.Result.Ok(1)
+P.anyDigit |> P.map(int_of_string) |> P.runParser("1") // Ok(1)
 
 // <$> map operator version.  <$> is traditionally "function on the left"
 int_of_string <$> P.anyDigit |> P.runParser("1");
@@ -154,23 +154,23 @@ together using a variety of techniques.
 
 ```reason
 // Combine two parsers into a tuple of the results (assuming all succeed)
-P.tuple2(P.anyDigit, P.anyDigit) |> P.runParser("12") // Belt.Result.Ok(("1", "2"))
+P.tuple2(P.anyDigit, P.anyDigit) |> P.runParser("12") // Ok(("1", "2"))
 
 // <^> operator (operator version of tuple2)
-P.anyDigit <^> P.anyDigit |> P.runParser("12") // Belt.Result.Ok(("1", "2"))
+P.anyDigit <^> P.anyDigit |> P.runParser("12") // Ok(("1", "2"))
 
 // Combine more parsers using tuple3 up to tuple5
 P.tuple3(P.anyDigit, P.anyDigit, P.anyDigit)
-|> P.runParser("123") // Belt.Result.Ok(("1", "2", "3"))
+|> P.runParser("123") // Ok(("1", "2", "3"))
 
 // Combine parse results using a function via map2 through map5
 P.map2((a, b) => a + b, P.anyDigitAsInt, P.anyDigitAsInt)
-|> P.runParser("12") // Belt.Result.Ok(3)
+|> P.runParser("12") // Ok(3)
 
 // Combine results from a tuple of parsers using mapTuple2 through mapTuple5
 (P.anyDigitAsInt, P.anyDigitAsInt)
 |> P.mapTuple2((a, b) => a + b)
-|> P.runParser("12"); // Belt.Result.Ok(3)
+|> P.runParser("12"); // Ok(3)
 
 // Use the *> operator to run two parsers, and only keep the result from the right side
 // This is useful if you don't care what the left side parser produces (e.g. whitespace)
@@ -178,7 +178,7 @@ P.map2((a, b) => a + b, P.anyDigitAsInt, P.anyDigitAsInt)
 // `ws` consumes all the whitespace it encounters and throws it away
 P.ws
 *> P.anyDigit
-|> P.runParser("   3") // Belt.Result.Ok("3")
+|> P.runParser("   3") // Ok("3")
 
 // Use the <* operator to run two parsers, and only keep the result from the left side
 // This is useful if you don't care what the right side parser produces (e.g. whitespace)
@@ -190,7 +190,7 @@ P.ws
 *> P.anyDigit
 <* P.ws
 <* P.eof
-|> P.runParser("   3  ") // Belt.Result.Ok("3")
+|> P.runParser("   3  ") // Ok("3")
 
 // ADVANCED: Incrementally collect parse results using a function and chained <$> map and <*> apply
 // operators.
@@ -199,7 +199,7 @@ add3
 <$> P.anyDigitAsInt
 <*> P.anyDigitAsInt
 <*> P.anyDigitAsInt
-|> P.runParser("123"); // Belt.Result.Ok(6)
+|> P.runParser("123"); // Ok(6)
 ```
 
 Many of these functions and operators come for free for any Applicative via [Relude Apply Extensions](https://github.com/reazen/relude/blob/master/src/extensions/Relude_Extensions_Apply.re)
@@ -225,7 +225,7 @@ if a parser fails at some point in a chain, the rest of the parsers will not run
 // Lift a pure value into a parser.
 // As you can see the parser just produces the given value regardless of the string.
 P.pure(3)
-|> runParser("abcdef") // Belt.Result.Ok(3)
+|> runParser("abcdef") // Ok(3)
 
 // Sequence parse operations using flatMap.
 // In this example we read a single digit as an int, then use that value
@@ -235,7 +235,7 @@ P.pure(3)
 P.anyDigitAsInt
 |> P.flatMap(count => P.anyAlpha |> P.times(count) <* P.eof)
 |> P.map(chars => Relude.List.String.join(chars))
-|> P.runParser("3abc"); // Belt.Result.Ok("abc")
+|> P.runParser("3abc"); // Ok("abc")
 
 // Sequence using >>= (flatMap/bind) and <#> (map) operators.
 // If you are coming from JS -
@@ -245,7 +245,7 @@ P.anyDigitAsInt
 P.anyDigitAsInt
 >>= (count => P.times(count, P.anyAlpha) <* P.eof)
 <#> Relude.List.String.join
-|> P.runParser("3abc"); // Belt.Result.Ok("abc")
+|> P.runParser("3abc"); // Ok("abc")
 ```
 
 Many of these functions come for free for any Monad via [Relude Monad Extensions](https://github.com/reazen/relude/blob/master/src/extensions/Relude_Extensions_Monad.re)
@@ -273,7 +273,7 @@ P.anyDigitAsInt
     }
 )
 <#> Relude.List.String.join
-|> runParser("9abc") // Belt.Result.Error(ParseError("The count cannot be >= 5"))
+|> runParser("9abc") // Error(ParseError("The count cannot be >= 5"))
 ```
 
 The `filter` function in `ReludeParse` is basically for this purpose.  Filter produces its
@@ -293,9 +293,9 @@ if it fails, try another, as many times as you want.
 The `<|>` operator is used for this - think of the `<|>` operator as an `orElse` function.
 
 ```reason
-P.anyDigit <|> P.anyAlpha |> P.runParser("9") // Belt.Result.Ok("9")
-P.anyDigit <|> P.anyAlpha |> P.runParser("a") // Belt.Result.Ok("a")
-P.anyDigit <|> P.anyAlpha |> P.runParser("!") // Belt.Result.Error(...)
+P.anyDigit <|> P.anyAlpha |> P.runParser("9") // Ok("9")
+P.anyDigit <|> P.anyAlpha |> P.runParser("a") // Ok("a")
+P.anyDigit <|> P.anyAlpha |> P.runParser("!") // Error(...)
 ```
 
 `<|>` can be chained as many times as you want - it attempts each parser left-to-right.
@@ -321,7 +321,7 @@ function to force a parser to back-track all the way to it's original position i
 // parser fully back-track on failure if it had consumed any input.
 P.tries(P.anyDigit *> P.anyDigit) // parse a digit, throw it away, then parse another digit
 <|> (P.anyDigit *> P.anyAlpha) // parse a digit,throw it away, then parse a letter
-|> P.runParser("9a") // Belt.Result.Ok("a")
+|> P.runParser("9a") // Ok("a")
 ```
 
 # Customizing the error message
@@ -333,7 +333,7 @@ message if the parser fails.
 ```reason
 P.many1(P.anyDigit)
 <?> "Expected one or more digits"
-|> P.runParser("abc") // Belt.Result.Error(ParseError("Expected one or more digits"))
+|> P.runParser("abc") // Error(ParseError("Expected one or more digits"))
 ```
 
 # Checking that all input is consumed

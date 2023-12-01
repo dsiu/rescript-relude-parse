@@ -22,11 +22,12 @@
     "relude"
   ],
   "bs-dev-dependencies": [
-    "@glennsl/bs-jest"
+    "@glennsl/rescript-jest"
   ],
   "warnings": {
     "number": "+A-9-40-42",
     "error": "+A"
   },
-  "refmt": 3
+  "refmt": 3,
+  "uncurried": false
 }

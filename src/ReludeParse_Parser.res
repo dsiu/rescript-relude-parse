@@ -143,7 +143,7 @@ include Relude.Extensions.Apply.ApplyExtensions(Apply)
 @ocaml.doc("
 Lift a pure value into a parser.
 ")
-let pure: 'a. 'a => t<'a> = a => Parser(posString => Belt.Result.Ok({result: a, suffix: posString}))
+let pure: 'a. 'a => t<'a> = a => Parser(posString => Ok({result: a, suffix: posString}))
 
 @ocaml.doc("
  * A parser that produces a pure unit () value regardless of the input
@@ -351,11 +351,11 @@ let lookAheadNot: 'a. t<'a> => t<unit> = (Parser(p)) => Parser(
   posString =>
     switch p(posString) {
     | Ok(_) =>
-      Belt.Result.Error({
+      Error({
         pos: posString.pos,
         error: ParseError.make("Expected look ahead to fail"),
       })
-    | Error(_) => Belt.Result.Ok({suffix: posString, result: ()})
+    | Error(_) => Ok({suffix: posString, result: ()})
     },
 )
 
@@ -1011,8 +1011,8 @@ let regex: Js.Re.t => t<string> = regex => Parser(
       Array.head(captures)
       |> Option.flatMap(Js.Nullable.toOption)
       |> Option.foldLazy(
-        () => Belt.Result.Error({error: parseError(), pos}),
-        match_ => Belt.Result.Ok({
+        () => Error({error: parseError(), pos}),
+        match_ => Ok({
           result: match_,
           suffix: {
             str,

@@ -9,17 +9,14 @@ describe("Tutorial", () => {
 
   test("Running a parser normally (success)", () => {
     open ReludeParse.Parser
-    anyDigit |> runParser("3") |> expect |> toEqual(Belt.Result.Ok("3"))
+    (anyDigit |> runParser("3"))->expect->toEqual(Ok("3"))
   })
 
   test("Running a parser normally (failure)", () => {
     open ReludeParse.Parser
-    anyDigit
-    |> runParser("!")
-    |> expect
-    |> toEqual(
-      Belt.Result.Error(ParseError.ParseError("Expected a digit, but found character '!'")),
-    )
+    (anyDigit |> runParser("!"))
+    ->expect
+    ->toEqual(Error(ParseError.ParseError("Expected a digit, but found character '!'")))
   })
 
   test("Running a parser verbosely (success)", () => {
@@ -29,7 +26,7 @@ describe("Tutorial", () => {
     |> Relude.Result.fold(
       ({error: ParseError(message)}) => jestFail("Parse should have succeeded: " ++ message),
       success =>
-        expect(success) |> toEqual({
+        expect(success)->toEqual({
           result: "3",
           suffix: {
             pos: 1,
@@ -41,153 +38,141 @@ describe("Tutorial", () => {
 
   test("mapping the result of a parser - unsafe & impure example", () => {
     open ReludeParse.Parser
-    \"<#>"(\"<#>"(many1(anyDigit), Relude.Nel.foldLeft((acc, v) => acc ++ v, "")), int_of_string) // DANGER!
-    |> runParser("12345")
-    |> expect
-    |> toEqual(Belt.Result.Ok(12345))
+    (\"<#>"(
+      \"<#>"(many1(anyDigit), Relude.Nel.foldLeft((acc, v) => acc ++ v, "")),
+      int_of_string,
+    ) |> runParser("12345"))
+    ->// DANGER!
+    expect
+    ->toEqual(Ok(12345))
   })
 
   test("mapping the result of a parser - safe & pure example", () => {
     open ReludeParse.Parser
-    \">>="(
+    (\">>="(
       \"<#>"(\"<*"(many1(anyDigit), eof), Relude.Nel.foldLeft((acc, v) => acc ++ v, "")),
       digitString =>
         Relude.Int.fromString(digitString) |> Relude.Option.foldLazy(
           () => parseFail("Failed to conver digit string to an int: " ++ digitString),
           pure,
         ),
-    )
-    |> runParser("12345")
-    |> expect
-    |> toEqual(Belt.Result.Ok(12345))
+    ) |> runParser("12345"))
+    ->expect
+    ->toEqual(Ok(12345))
   })
 
   test("tuple2 example", () => {
     open ReludeParse.Parser
-    tuple2(anyDigit, anyDigit) |> runParser("12") |> expect |> toEqual(Belt.Result.Ok(("1", "2")))
+    (tuple2(anyDigit, anyDigit) |> runParser("12"))->expect->toEqual(Ok(("1", "2")))
   })
 
   test("map2 example", () => {
     open ReludeParse.Parser
-    map2((a, b) => a + b, anyDigitAsInt, anyDigitAsInt)
-    |> runParser("12")
-    |> expect
-    |> toEqual(Belt.Result.Ok(3))
+    (map2((a, b) => a + b, anyDigitAsInt, anyDigitAsInt) |> runParser("12"))->expect->toEqual(Ok(3))
   })
 
   test("mapTuple2 example", () => {
     open ReludeParse.Parser
-    (anyDigitAsInt, anyDigitAsInt)
-    |> mapTuple2((a, b) => a + b)
-    |> runParser("12")
-    |> expect
-    |> toEqual(Belt.Result.Ok(3))
+    ((anyDigitAsInt, anyDigitAsInt) |> mapTuple2((a, b) => a + b) |> runParser("12"))
+    ->expect
+    ->toEqual(Ok(3))
   })
 
   test("*> example", () => {
     open ReludeParse.Parser
-    \"*>"(ws, anyDigit) |> runParser("    3") |> expect |> toEqual(Belt.Result.Ok("3"))
+    (\"*>"(ws, anyDigit) |> runParser("    3"))->expect->toEqual(Ok("3"))
   })
 
   test("<* example", () => {
     open ReludeParse.Parser
-    \"<*"(\"<*"(\"*>"(ws, anyDigit), ws), eof)
-    |> runParser("    3   ")
-    |> expect
-    |> toEqual(Belt.Result.Ok("3"))
+    (\"<*"(\"<*"(\"*>"(ws, anyDigit), ws), eof) |> runParser("    3   "))->expect->toEqual(Ok("3"))
   })
 
   test("<$> <*> example", () => {
     let add3 = (a, b, c) => a + b + c
     open ReludeParse.Parser
-    \"<*>"(\"<*>"(\"<$>"(add3, anyDigitAsInt), anyDigitAsInt), anyDigitAsInt)
-    |> runParser("123")
-    |> expect
-    |> toEqual(Belt.Result.Ok(6))
+    (\"<*>"(\"<*>"(\"<$>"(add3, anyDigitAsInt), anyDigitAsInt), anyDigitAsInt) |> runParser("123"))
+    ->expect
+    ->toEqual(Ok(6))
   })
 
   test("pure example", () => {
     open ReludeParse.Parser
-    pure(3) |> runParser("abcdef") |> expect |> toEqual(Belt.Result.Ok(3))
+    (pure(3) |> runParser("abcdef"))->expect->toEqual(Ok(3))
   })
 
   test("Sequence example", () => {
     open ReludeParse.Parser
-    anyDigitAsInt
+    (anyDigitAsInt
     |> flatMap(count => \"<*"(anyAlpha |> times(count), eof))
     |> map(chars => Relude.List.String.join(chars))
-    |> runParser("3abc")
-    |> expect
-    |> toEqual(Belt.Result.Ok("abc"))
+    |> runParser("3abc"))
+    ->expect
+    ->toEqual(Ok("abc"))
   })
 
   test("Sequence operator example", () => {
     open ReludeParse.Parser
-    \"<#>"(
+    (\"<#>"(
       \">>="(anyDigitAsInt, count => \"<*"(times(count, anyAlpha), eof)),
       Relude.List.String.join,
-    )
-    |> runParser("3abc")
-    |> expect
-    |> toEqual(Belt.Result.Ok("abc"))
+    ) |> runParser("3abc"))
+    ->expect
+    ->toEqual(Ok("abc"))
   })
 
   test("Sequence with fail example", () => {
     open ReludeParse.Parser
-    \"<#>"(
-      \">>="(anyDigitAsInt, count =>
-        if count >= 5 {
-          ReludeParse.Parser.fail("The count cannot be >= 5")
-        } else {
-          \"<*"(times(count, anyAlpha), eof)
-        }
+    (\"<#>"(
+      \">>="(
+        anyDigitAsInt,
+        count =>
+          if count >= 5 {
+            ReludeParse.Parser.fail("The count cannot be >= 5")
+          } else {
+            \"<*"(times(count, anyAlpha), eof)
+          },
       ),
       Relude.List.String.join,
-    )
-    |> runParser("9abc")
-    |> expect
-    |> toEqual(Belt.Result.Error(ParseError.ParseError("The count cannot be >= 5")))
+    ) |> runParser("9abc"))
+    ->expect
+    ->toEqual(Error(ParseError.ParseError("The count cannot be >= 5")))
   })
 
   test("<|> left example", () => {
     open ReludeParse.Parser
-    \"<|>"(anyDigit, anyAlpha) |> runParser("9") |> expect |> toEqual(Belt.Result.Ok("9"))
+    (\"<|>"(anyDigit, anyAlpha) |> runParser("9"))->expect->toEqual(Ok("9"))
   })
 
   test("<|> right example", () => {
     open ReludeParse.Parser
-    \"<|>"(anyDigit, anyAlpha) |> runParser("c") |> expect |> toEqual(Belt.Result.Ok("c"))
+    (\"<|>"(anyDigit, anyAlpha) |> runParser("c"))->expect->toEqual(Ok("c"))
   })
 
   test("<|> error example", () => {
     open ReludeParse.Parser
-    \"<|>"(anyDigit, anyAlpha)
-    |> runParser("!")
-    |> expect
-    |> toEqual(
-      Belt.Result.Error(ParseError.ParseError("Expected any alphabet letter (upper or lowercase)")),
-    )
+    (\"<|>"(anyDigit, anyAlpha) |> runParser("!"))
+    ->expect
+    ->toEqual(Error(ParseError.ParseError("Expected any alphabet letter (upper or lowercase)")))
   })
 
   test("<|> with tries example", () => {
     open ReludeParse.Parser
-    \"<|>"(tries(\"*>"(anyDigit, anyDigit)), \"*>"(anyDigit, anyAlpha))
-    |> runParser("9a")
-    |> expect
-    |> toEqual(Belt.Result.Ok("a"))
+    (\"<|>"(tries(\"*>"(anyDigit, anyDigit)), \"*>"(anyDigit, anyAlpha)) |> runParser("9a"))
+    ->expect
+    ->toEqual(Ok("a"))
   })
 
   test("Custom error example", () => {
     open ReludeParse.Parser
-    \"<?>"(many1(anyDigit), "Expected one or more digits")
-    |> runParser("abc")
-    |> expect
-    |> toEqual(Belt.Result.Error(ParseError.ParseError("Expected one or more digits")))
+    (\"<?>"(many1(anyDigit), "Expected one or more digits") |> runParser("abc"))
+    ->expect
+    ->toEqual(Error(ParseError.ParseError("Expected one or more digits")))
   })
 
   test("IPv4 example 1", () => {
     open ReludeParse.Parser
-    (
+    ((
       \"<*"(anyPositiveShort, str(".")),
       \"<*"(anyPositiveShort, str(".")),
       \"<*"(anyPositiveShort, str(".")),
@@ -195,35 +180,50 @@ describe("Tutorial", () => {
     )
     |> mapTuple4(ReludeParse.IPv4.unsafeFromInts)
     |> runParser("127.0.0.1")
-    |> Relude.Result.map(ReludeParse.IPv4.toTuple)
-    |> expect
-    |> toEqual(Belt.Result.Ok((127, 0, 0, 1)))
+    |> Relude.Result.map(ReludeParse.IPv4.toTuple))
+    ->expect
+    ->toEqual(Ok((127, 0, 0, 1)))
   })
 
   test("IPv4 example 2", () => {
     open ReludeParse.Parser
-    \">>="(anyPositiveShort, a =>
-      \">>="(str("."), _ =>
-        \">>="(anyPositiveShort, b =>
-          \">>="(str("."), _ =>
-            \">>="(anyPositiveShort, c =>
-              \">>="(str("."), _ =>
-                \"<#>"(anyPositiveShort, d => ReludeParse.IPv4.unsafeFromInts(a, b, c, d))
-              )
-            )
-          )
-        )
-      )
+    (\">>="(
+      anyPositiveShort,
+      a =>
+        \">>="(
+          str("."),
+          _ =>
+            \">>="(
+              anyPositiveShort,
+              b =>
+                \">>="(
+                  str("."),
+                  _ =>
+                    \">>="(
+                      anyPositiveShort,
+                      c =>
+                        \">>="(
+                          str("."),
+                          _ =>
+                            \"<#>"(
+                              anyPositiveShort,
+                              d => ReludeParse.IPv4.unsafeFromInts(a, b, c, d),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
     )
     |> runParser("127.0.0.1")
-    |> Relude.Result.map(ReludeParse.IPv4.toTuple)
-    |> expect
-    |> toEqual(Belt.Result.Ok((127, 0, 0, 1)))
+    |> Relude.Result.map(ReludeParse.IPv4.toTuple))
+    ->expect
+    ->toEqual(Ok((127, 0, 0, 1)))
   })
 
   test("IPv4 example 3", () => {
     open ReludeParse.Parser
-    \"<*>"(
+    (\"<*>"(
       \"<*"(
         \"<*>"(
           \"<*"(
@@ -240,23 +240,25 @@ describe("Tutorial", () => {
       anyPositiveShort,
     )
     |> runParser("127.0.0.1")
-    |> Relude.Result.map(ReludeParse.IPv4.toTuple)
-    |> expect
-    |> toEqual(Belt.Result.Ok((127, 0, 0, 1)))
+    |> Relude.Result.map(ReludeParse.IPv4.toTuple))
+    ->expect
+    ->toEqual(Ok((127, 0, 0, 1)))
   })
 
   test("IPv4 example 4", () => {
     open ReludeParse.Parser
-    \">>="(anyPositiveShort |> sepBy(str(".")), shorts =>
-      switch shorts {
-      | list{a, b, c, d} => pure(ReludeParse.IPv4.unsafeFromInts(a, b, c, d))
-      | _ => parseFail("Expected exactly 4 shorts separated by .")
-      }
+    (\">>="(
+      anyPositiveShort |> sepBy(str(".")),
+      shorts =>
+        switch shorts {
+        | list{a, b, c, d} => pure(ReludeParse.IPv4.unsafeFromInts(a, b, c, d))
+        | _ => parseFail("Expected exactly 4 shorts separated by .")
+        },
     )
     |> runParser("127.0.0.1")
-    |> Relude.Result.map(ReludeParse.IPv4.toTuple)
-    |> expect
-    |> toEqual(Belt.Result.Ok((127, 0, 0, 1)))
+    |> Relude.Result.map(ReludeParse.IPv4.toTuple))
+    ->expect
+    ->toEqual(Ok((127, 0, 0, 1)))
   })
 
   test("CSV example", () => {
@@ -271,7 +273,7 @@ describe("Tutorial", () => {
     }
 
     let actual = csvParser |> ReludeParse.runParser("abc,def")
-    let expected = Belt.Result.Ok(list{"abc", "def"})
-    expect(actual) |> toEqual(expected)
+    let expected = Ok(list{"abc", "def"})
+    expect(actual)->toEqual(expected)
   })
 })

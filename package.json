@@ -24,14 +24,14 @@
   },
   "homepage": "https://github.com/reazen/relude-parse#readme",
   "peerDependencies": {
-    "bs-bastet": "github:dsiu/rescript-bastet#main",
-    "relude": "github:dsiu/rescript-relude#main"
+    "bs-bastet": "github:dsiu/rescript-bastet#rescript-v11-curried-mode",
+    "relude": "github:dsiu/rescript-relude#rescript-v11-curried-mode"
   },
   "devDependencies": {
-    "rescript": "^10.0.0",
-    "@glennsl/bs-jest": "^0.5.1",
-    "bs-bastet": "github:dsiu/rescript-bastet#main",
-    "relude": "github:dsiu/rescript-relude#main"
+    "rescript": "^11.0.0-rc.6",
+    "@glennsl/rescript-jest": "github:dsiu/rescript-jest#rescript-v11-curried-mode",
+    "bs-bastet": "github:dsiu/rescript-bastet#rescript-v11-curried-mode",
+    "relude": "github:dsiu/rescript-relude#rescript-v11-curried-mode"
   },
   "jest": {
     "verbose": false,
