@@ -1,3 +1,6 @@
+@@uncurried
+@@uncurried.swap
+
 open Relude.Globals
 module P = ReludeParse_Parser
 open P
@@ -17,53 +20,52 @@ let show: t => string = x =>
   | IPv6(0, 0, 0, 0, 0, 0, 0, 1) => "::1"
   | IPv6(a, b, c, d, e, f, g, h) =>
     list{a, b, c, d, e, f, g, h}
-    |> List.map(Js.Int.toStringWithRadix(~radix=16))
-    |> List.String.joinWith(":")
+    ->List.map(x => Js.Int.toStringWithRadix(~radix=16, x), _)
+    ->(List.String.joinWith(":", _))
   }
 
-let allZeroGroup: P.t<int> = \"<#>"(timesMinMax(1, 4, str("0")), _ => 0)
+let allZeroGroup: P.t<int> = timesMinMax(1, 4, str("0"))->\"<$$>"(_ => 0)
 
-let threeZeroPadGroup = \"<#>"(\"*>"(times(3, str("0")), anyHexDigit), hexDigit =>
-  int_of_string("0x" ++ hexDigit)
-)
+let threeZeroPadGroup = {
+  times(3, str("0"))
+  ->\"*>"(anyHexDigit)
+  ->\"<$$>"(hexDigit => int_of_string("0x" ++ hexDigit))
+}
 
-let twoZeroPadGroup = \"<#>"(
-  \"<#>"(\"*>"(times(2, str("0")), timesMinMax(1, 2, anyHexDigit)), List.String.join),
-  hexDigits => int_of_string("0x" ++ hexDigits),
-)
+let twoZeroPadGroup = {
+  times(2, str("0"))
+  ->\"*>"(timesMinMax(1, 2, anyHexDigit))
+  ->\"<$$>"(List.String.join)
+  ->\"<$$>"(hexDigits => int_of_string("0x" ++ hexDigits))
+}
 
-let oneZeroPadGroup = \"<#>"(
-  \"<#>"(\"*>"(str("0"), timesMinMax(1, 3, anyHexDigit)), List.String.join),
-  hexDigits => int_of_string("0x" ++ hexDigits),
-)
+let oneZeroPadGroup = {
+  str("0")
+  ->\"*>"(timesMinMax(1, 3, anyHexDigit))
+  ->\"<$$>"(List.String.join)
+  ->\"<$$>"(hexDigits => int_of_string("0x" ++ hexDigits))
+}
+let nonZeroPaddedGroup: P.t<int> = {
+  (anyNonZeroHexDigit, timesMax(3, anyHexDigit)->\"<$$>"(List.String.join))
+  ->mapTuple2((first, rest) => first ++ rest, _)
+  ->\"<$$>"(hexDigits => int_of_string("0x" ++ hexDigits))
+}
 
-let nonZeroPaddedGroup: P.t<int> = \"<#>"(
-  (anyNonZeroHexDigit, \"<#>"(timesMax(3, anyHexDigit), List.String.join)) |> mapTuple2((
-    first,
-    rest,
-  ) => first ++ rest),
-  hexDigits => int_of_string("0x" ++ hexDigits),
-)
+let emptyGroup: P.t<int> = str("")->\"<$$>"(_ => 0)
 
-let emptyGroup: P.t<int> = \"<#>"(str(""), _ => 0)
-
-let group: P.t<int> = \"<?>"(
-  \"<|>"(
-    \"<|>"(
-      \"<|>"(
-        \"<|>"(\"<|>"(tries(threeZeroPadGroup), tries(twoZeroPadGroup)), tries(oneZeroPadGroup)),
-        tries(nonZeroPaddedGroup),
-      ),
-      allZeroGroup,
-    ),
-    emptyGroup,
-  ),
-  "Expected IPv6 hex value",
-)
+let group: P.t<int> = {
+  tries(threeZeroPadGroup)
+  ->\"<|>"(tries(twoZeroPadGroup))
+  ->\"<|>"(tries(oneZeroPadGroup))
+  ->\"<|>"(tries(nonZeroPaddedGroup))
+  ->\"<|>"(allZeroGroup)
+  ->\"<|>"(emptyGroup)
+  ->\"<?>"("Expected IPv6 hex value")
+}
 
 let groupsNel: P.t<Nel.t<int>> = sepBy1(str(":"), group)
 
-let groups: P.t<t> = \">>="(groupsNel, x =>
+let groups: P.t<t> = groupsNel->\">>="(x =>
   switch x {
   | NonEmpty(a, list{b, c, d, e, f, g, h}) => pure(make(a, b, c, d, e, f, g, h))
 
@@ -98,16 +100,16 @@ let groups: P.t<t> = \">>="(groupsNel, x =>
   }
 )
 
-let loopbackAbbreviated = \"<#>"(str("::1"), const(loopback))
+let loopbackAbbreviated = str("::1")->\"<$$>"(const(loopback, _))
 
-let parser: P.t<t> = \"<|>"(loopbackAbbreviated, groups)
+let parser: P.t<t> = loopbackAbbreviated->\"<|>"(groups)
 
 let parse: string => Belt.Result.t<t, P.ParseError.t> = str => P.runParser(str, parser)
 
-let parseOption: string => option<t> = \">>"(parse, Result.getOk)
+let parseOption: string => option<t> = \">>"(parse, Result.getOk, _)
 
 let unsafeFromString: string => t = str =>
   Result.fold(e => failwith(P.ParseError.show(e)), id, parse(str))
 
 let unsafeFromInts = (a, b, c, d, e, f, g, h) =>
-  make(a, b, c, d, e, f, g, h) |> show |> unsafeFromString
+  unsafeFromString(show(make(a, b, c, d, e, f, g, h)))

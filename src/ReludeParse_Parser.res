@@ -1,3 +1,6 @@
+@@uncurried
+@@uncurried.swap
+
 open BsBastet.Interface
 open Relude.Globals
 
@@ -82,8 +85,8 @@ let runParser: 'a. (string, t<'a>) => Belt.Result.t<'a, ParseError.t> = (input, 
 @ocaml.doc("
 Map a pure function over a parser.
 ")
-let map: 'a 'b. ('a => 'b, t<'a>) => t<'b> = (f, Parser(pa)) => Parser(
-  posString => pa(posString) |> Result.map(({result, suffix}) => {result: f(result), suffix}),
+let map: 'a 'b. (. 'a => 'b, t<'a>) => t<'b> = (f, Parser(pa)) => Parser(
+  posString => pa(posString)->(Result.map(({result, suffix}) => {result: f(result), suffix}, _)),
 )
 
 @ocaml.doc("
@@ -99,7 +102,7 @@ include Relude.Extensions.Functor.FunctorExtensions(Functor)
 Inspects a successful parse result using a callback with the value and the suffix
 ")
 let tap: 'a. (('a, PosString.t, PosString.t) => unit, t<'a>) => t<'a> = (f, Parser(pa)) => Parser(
-  posString => pa(posString) |> Result.tap(({result, suffix}) => f(result, posString, suffix)),
+  posString => pa(posString)->(Result.tap(({result, suffix}) => f(result, posString, suffix), _)),
 )
 
 @ocaml.doc("
@@ -111,23 +114,31 @@ or monadic composition of parsers) to inject some unobtrusive logging for that p
 E.g. `many1(anyDigit) |> tapLog`
  ")
 let tapLog: t<'a> => t<'a> = pa =>
-  pa |> tap((result, posStringBefore, posStringAfter) =>
-    Js.log3(
-      "ReludeParse log: input \"" ++
-      (posStringBefore.str ++
-      ("\" at pos " ++ (string_of_int(posStringBefore.pos) ++ " had result: "))),
-      result,
-      " with resulting pos: " ++ string_of_int(posStringAfter.pos),
+  pa->(
+    tap(
+      (result, posStringBefore, posStringAfter) =>
+        Js.log3(
+          "ReludeParse log: input \"" ++
+          (posStringBefore.str ++
+          ("\" at pos " ++ (string_of_int(posStringBefore.pos) ++ " had result: "))),
+          result,
+          " with resulting pos: " ++ string_of_int(posStringAfter.pos),
+        ),
+      _,
     )
   )
 
 @ocaml.doc("
 Apply a wrapped function to a parser.
 ")
-let apply: 'a 'b. (t<'a => 'b>, t<'a>) => t<'b> = (Parser(pf), Parser(pa)) => Parser(
+let apply: 'a 'b. (. t<'a => 'b>, t<'a>) => t<'b> = (Parser(pf), Parser(pa)) => Parser(
   posString =>
-    pf(posString) |> Result.flatMap(({result: f, suffix: s1}) =>
-      pa(s1) |> Result.flatMap(({result: a, suffix: s2}) => Ok({result: f(a), suffix: s2}))
+    pf(posString)->(
+      Result.flatMap(
+        ({result: f, suffix: s1}) =>
+          pa(s1)->(Result.flatMap(({result: a, suffix: s2}) => Ok({result: f(a), suffix: s2}), _)),
+        _,
+      )
     ),
 )
 
@@ -162,35 +173,39 @@ include Relude.Extensions.Applicative.ApplicativeExtensions(Applicative)
 @ocaml.doc("
 Attempts to run a parser on the left, and if it fails, attempts the other parser on the right.
 ")
-let alt: 'a. (t<'a>, t<'a>) => t<'a> = (Parser(p1), Parser(p2)) => Parser(
-  posString =>
-    switch p1(posString) {
-    | Ok(_) as ok => ok
-    | Error({pos}) as e =>
-      if posString.pos == pos {
-        p2(posString)
-      } else {
-        e
-      }
-    },
-)
+let alt: 'a. (. t<'a>, t<'a>) => t<'a> = (Parser(p1), Parser(p2)) => {
+  Parser(
+    posString =>
+      switch p1(posString) {
+      | Ok(_) as ok => ok
+      | Error({pos}) as e =>
+        if posString.pos == pos {
+          p2(posString)
+        } else {
+          e
+        }
+      },
+  )
+}
 
 @ocaml.doc("
  * Attempts to run a parser on the left, and if it fails, attempts the other lazily-constructed parser on the right.
  ")
-let altLazy: 'a. (t<'a>, unit => t<'a>) => t<'a> = (Parser(p1), makeP2) => Parser(
-  posString =>
-    switch p1(posString) {
-    | Ok(_) as ok => ok
-    | Error({pos}) as e =>
-      if posString.pos == pos {
-        let Parser(p2) = makeP2()
-        p2(posString)
-      } else {
-        e
-      }
-    },
-)
+let altLazy: 'a. (t<'a>, unit => t<'a>) => t<'a> = (Parser(p1), makeP2) => {
+  Parser(
+    posString =>
+      switch p1(posString) {
+      | Ok(_) as ok => ok
+      | Error({pos}) as e =>
+        if posString.pos == pos {
+          let Parser(p2) = makeP2()
+          p2(posString)
+        } else {
+          e
+        }
+      },
+  )
+}
 
 @ocaml.doc("
  * Handles an error by using a new lazily-constructed parser
@@ -211,13 +226,12 @@ include Relude.Extensions.Alt.AltExtensions(Alt)
 @ocaml.doc("
 Monadic bind for sequencing parsers
 ")
-let bind: 'a 'b. (t<'a>, 'a => t<'b>) => t<'b> = (Parser(pa), aToPB) => Parser(
-  posString =>
-    pa(posString) |> Result.flatMap(({result: a, suffix: s1}) => {
-      let Parser(pb) = aToPB(a)
-      pb(s1)
-    }),
-)
+let bind: 'a 'b. (. t<'a>, 'a => t<'b>) => t<'b> = (Parser(pa), aToPB) => {
+  Parser(posString => pa(posString)->(Result.flatMap(({result: a, suffix: s1}) => {
+          let Parser(pb) = aToPB(a)
+          pb(s1)
+        }, _)))
+}
 
 @ocaml.doc("
  * MONAD instance for Parser
@@ -264,13 +278,12 @@ include Relude.Extensions.MonadThrow.MonadThrowExtensions(MonadThrow)
 @ocaml.doc("
  * Handles an error by creating a new parser from the error
  ")
-let catchError: 'a. (ParseError.t => t<'a>, t<'a>) => t<'a> = (errorToPA, Parser(pa)) => Parser(
-  posString =>
-    pa(posString) |> Relude.Result.catchError(({error}) => {
-      let Parser(pa2) = errorToPA(error)
-      pa2(posString)
-    }),
-)
+let catchError: 'a. (ParseError.t => t<'a>, t<'a>) => t<'a> = (errorToPA, Parser(pa)) => {
+  Parser(posString => pa(posString)->(Relude.Result.catchError(({error}) => {
+          let Parser(pa2) = errorToPA(error)
+          pa2(posString)
+        }, _)))
+}
 
 @ocaml.doc("
  * MONAD_ERROR instance for Parser
@@ -288,9 +301,13 @@ In case of error, the default behavior is to backtrack if no input was consumed.
 
 `tries` backtracks even if input was consumed
 ")
-let tries: 'a. t<'a> => t<'a> = (Parser(pa)) => Parser(
-  ({pos} as posString) => pa(posString) |> Result.mapError(({error}) => {pos, error}),
-)
+let tries: 'a. t<'a> => t<'a> = (Parser(pa)) => {
+  Parser(
+    ({pos} as posString) => {
+      pa(posString)->(Result.mapError(({error}) => {pos, error}, _))
+    },
+  )
+}
 
 @ocaml.doc("
 Attempts a parser, and if it fails, provide a custom error message
@@ -312,8 +329,8 @@ module Infix = {
   include Relude.Extensions.Monad.MonadInfix(Monad)
   include Relude.Extensions.Alt.AltInfix(Alt)
   let \"<?>" = flipWithError
-  @ocaml.doc(" [dsiu] patch ")
-  let \"<#>" = (f, x) => map(x, f)
+  // @ocaml.doc(" [dsiu] patch ")
+  //let \"<$$>" = (f, x) => map(x, f)
 }
 
 // Bring all the useful operators into scope for use below and in global/local opens of ReludeParse.Parser
@@ -372,13 +389,23 @@ Attempts to run a parser 0 or more times to produce a list of results.
 
 TODO: not stack safe - purescript-string-parsers uses manyRec the MonadRec version
 ")
-let rec many: 'a. t<'a> => t<list<'a>> = pa =>
-  \"<|>"(\">>="(pa, a => \"<$>"(List.cons(a), many(pa))), pure(list{}))
+let rec many: 'a. t<'a> => t<list<'a>> = pa => {
+  pa
+  ->\">>="(a => (List.cons(a, _))->\"<$>"(many(pa)))
+  ->\"<|>"(pure(list{}))
+}
 
 @ocaml.doc("
 Attempts to run a parser 1 or more times to produce a non-empty-list of results.
 ")
-let many1: 'a. t<'a> => t<Nel.t<'a>> = pa => \"<*>"(\"<$>"(Nel.make, pa), many(pa))
+let many1: 'a. t<'a> => t<Nel.t<'a>> = pa => {
+  {
+    open Relude_Function
+    Nel.make->uncurryFn2
+  }
+  ->\"<$>"(pa)
+  ->\"<*>"(many(pa))
+}
 
 @ocaml.doc("
 Attempts to run a parser the given number of times
@@ -389,7 +416,12 @@ let rec times: 'a. (int, t<'a>) => t<list<'a>> = (count, pa) =>
   if count <= 0 {
     pure(list{})
   } else {
-    \"<*>"(\"<$>"(List.cons, pa), times(count - 1, pa))
+    {
+      open Relude.Function
+      List.cons->uncurryFn2
+    }
+    ->\"<$>"(pa)
+    ->\"<*>"(times(count - 1, pa))
   }
 
 @ocaml.doc("
@@ -415,8 +447,14 @@ let times5: 'a. t<'a> => t<('a, 'a, 'a, 'a, 'a)> = pa => tuple5(pa, pa, pa, pa, 
 @ocaml.doc("
 Attempts to run a parser at least `min` times (inclusive) and as many times as possible after that.
 ")
-let timesMin: 'a. (int, t<'a>) => t<list<'a>> = (min, pa) =>
-  \"<*>"(\"<$>"(List.concat, times(min, pa)), many(pa))
+let timesMin: 'a. (int, t<'a>) => t<list<'a>> = (min, pa) => {
+  {
+    open Relude.Function
+    List.concat->uncurryFn2
+  }
+  ->\"<$>"(times(min, pa))
+  ->\"<*>"(many(pa))
+}
 
 @ocaml.doc("
 Attempts to run a parser as many times as possible up to `max` times (inclusive).
@@ -427,10 +465,12 @@ let rec timesMax: 'a. (int, t<'a>) => t<list<'a>> = (max, pa) =>
   if max == 0 {
     pure(list{})
   } else {
-    \"<*>"(
-      \"<$>"(List.concat, \"<|>"(\"<#>"(pa, a => list{a}), pure(list{}))),
-      timesMax(max - 1, pa),
-    )
+    {
+      open Relude.Function
+      List.concat->uncurryFn2
+    }
+    ->\"<$>"(pa->\"<$$>"(a => list{a})->\"<|>"(pure(list{})))
+    ->\"<*>"(timesMax(max - 1, pa))
   }
 
 @ocaml.doc("
@@ -438,139 +478,178 @@ Attempts to run a parser at least min (inclusive) and up to max times (inclusive
 
 E.g. if you want to parse 2 to 5 digits, use: `timesMinMax(2, 5, anyDigit)`
 ")
-let timesMinMax: 'a. (int, int, t<'a>) => t<list<'a>> = (min, max, pa) =>
-  \"<*>"(\"<$>"(List.concat, times(min, pa)), timesMax(max - min, pa))
+let timesMinMax: 'a. (int, int, t<'a>) => t<list<'a>> = (min, max, pa) => {
+  {
+    open Relude.Function
+    List.concat->uncurryFn2
+  }
+  ->\"<$>"(times(min, pa))
+  ->\"<*>"(timesMax(max - min, pa))
+}
 
 @ocaml.doc("
 Attempts to parse an opening delimiter, a value, and a closing delimiter, producing only the value.
 ")
-let between: 'a 'opening 'closing. (t<'opening>, t<'closing>, t<'a>) => t<'a> = (po, pc, pa) =>
-  \"<*"(\"*>"(po, pa), pc)
+let between: 'a 'opening 'closing. (t<'opening>, t<'closing>, t<'a>) => t<'a> = (po, pc, pa) => {
+  po->\"*>"(pa)->\"<*"(pc)
+}
 
 @ocaml.doc("
 Attempts a parser, and if it fails, return the given default value (in a parser)
 ")
-let orDefault: 'a. ('a, t<'a>) => t<'a> = (default, p) => \"<|>"(p, pure(default))
+let orDefault: 'a. ('a, t<'a>) => t<'a> = (default, p) => p->\"<|>"(pure(default))
 
 @ocaml.doc("
 Attempts a parser to consume some input and ignores failures.
 ")
-let orUnit: 'a. t<'a> => t<unit> = p => \"<|>"(\">>="(p, _ => pure()), pure())
+let orUnit: 'a. t<'a> => t<unit> = p => {
+  p->\">>="(_ => pure())->\"<|>"(pure())
+}
 
 @ocaml.doc("
 Attempts a parser, and converts any errors into None, and wraps successful values in Some.
 ")
-let opt: 'a. t<'a> => t<option<'a>> = p => orDefault(None, \"<$>"(Option.some, p))
+let opt: 'a. t<'a> => t<option<'a>> = p => orDefault(None, Option.some->\"<$>"(p))
 
 @ocaml.doc("
 Parses 0 or more separated values.
 ")
-let rec sepBy: 'a 'sep. (t<'sep>, t<'a>) => t<list<'a>> = (ps, pa) =>
-  \"<|>"(\"<$>"(Nel.toList, sepBy1(ps, pa)), pure(list{}))
+let rec sepBy: 'a 'sep. (t<'sep>, t<'a>) => t<list<'a>> = (ps, pa) => {
+  Nel.toList->\"<$>"(sepBy1(ps, pa))->\"<|>"(pure(list{}))
+}
 
 @ocaml.doc("
 Parses 1 or more separated values.
 ")
-and sepBy1: 'a 'sep. (t<'sep>, t<'a>) => t<Nel.t<'a>> = (ps, pa) =>
-  \">>="(pa, h => \"<#>"(many(\"*>"(ps, pa)), t => Nel.make(h, t)))
+and sepBy1: 'a 'sep. (t<'sep>, t<'a>) => t<Nel.t<'a>> = (ps, pa) => {
+  pa->\">>="(h => many(\"*>"(ps, pa))->\"<$$>"(t => Nel.make(h, t)))
+}
 
 @ocaml.doc("
 Parses 0 or more separated values, optionally ending with a separator
 ")
-let rec sepByOptEnd: 'a 'sep. (t<'sep>, t<'a>) => t<list<'a>> = (ps, pa) =>
-  \"<|>"(\"<$>"(Nel.toList, sepByOptEnd1(ps, pa)), pure(list{}))
+let rec sepByOptEnd: 'a 'sep. (t<'sep>, t<'a>) => t<list<'a>> = (ps, pa) => {
+  Nel.toList->\"<$>"(sepByOptEnd1(ps, pa))->\"<|>"(pure(list{}))
+}
 
 @ocaml.doc("
 Parses 1 or more separated values, optionally ending with a separator
 ")
-and sepByOptEnd1: 'a 'sep. (t<'sep>, t<'a>) => t<Nel.t<'a>> = (ps, pa) =>
-  \">>="(pa, h =>
-    \"<|>"(\">>="(ps, _ => \"<#>"(sepByOptEnd(ps, pa), t => Nel.make(h, t))), pure(Nel.pure(h)))
-  )
+and sepByOptEnd1: 'a 'sep. (t<'sep>, t<'a>) => t<Nel.t<'a>> = (ps, pa) => {
+  pa->\">>="(h => {
+    ps
+    ->\">>="(_ => {
+      sepByOptEnd(ps, pa)->\"<$$>"(t => Nel.make(h, t))
+    })
+    ->\"<|>"(pure(Nel.pure(h)))
+  })
+}
 
 @ocaml.doc("
 Parses 0 or more separated values, ending with a separator
  ")
-let sepByWithEnd: 'a 'sep. (t<'sep>, t<'a>) => t<list<'a>> = (ps, pa) => many(\"<*"(pa, ps))
+let sepByWithEnd: 'a 'sep. (t<'sep>, t<'a>) => t<list<'a>> = (ps, pa) => many(pa->\"<*"(ps))
 
 @ocaml.doc("
 Parses 1 or more separated values, ending with a separator
  ")
-let sepByWithEnd1: 'a 'sep. (t<'sep>, t<'a>) => t<Nel.t<'a>> = (ps, pa) => many1(\"<*"(pa, ps))
+let sepByWithEnd1: 'a 'sep. (t<'sep>, t<'a>) => t<Nel.t<'a>> = (ps, pa) => many1(pa->\"<*"(ps))
 
 @ocaml.doc("
 Parses 0 or more values separated by a right-associative operator.
  ")
 let rec chainr: 'a. (t<('a, 'a) => 'a>, 'a, t<'a>) => t<'a> = (pf, a, pa) =>
-  \"<|>"(chainr1(pf, pa), pure(a))
+  chainr1(pf, pa)->\"<|>"(pure(a))
 
 @ocaml.doc("
 Parses 1 or more values separated by a right-associative operator.
  ")
 and chainr1: 'a. (t<('a, 'a) => 'a>, t<'a>) => t<'a> = (pf, pa) =>
-  \">>="(pa, a => chainr1'(pf, a, pa))
+  pa->\">>="(a => {
+    chainr1'(pf, a, pa)
+  })
 
 @ocaml.doc("
 Parses 1 or more values separated by a right-associative operator.
  ")
-and chainr1': 'a. (t<('a, 'a) => 'a>, 'a, t<'a>) => t<'a> = (pf, a, pa) =>
-  \"<|>"(\">>="(pf, f => \"<#>"(chainr1(pf, pa), a2 => f(a, a2))), pure(a))
+and chainr1': 'a. (t<('a, 'a) => 'a>, 'a, t<'a>) => t<'a> = (pf, a, pa) => {
+  pf
+  ->\">>="(f => {
+    chainr1(pf, pa)->\"<$$>"(a2 => f(a, a2))
+  })
+  ->\"<|>"(pure(a))
+}
 
 @ocaml.doc("
 Parses 0 or more values separated by a left-associative operator.
  ")
 let rec chainl: 'a. (t<('a, 'a) => 'a>, 'a, t<'a>) => t<'a> = (pf, a, pa) =>
-  \"<|>"(chainl1(pf, pa), pure(a))
+  chainl1(pf, pa)->\"<|>"(pure(a))
 
 @ocaml.doc("
 Parses 1 or more values separated by a left-associative operator.
  ")
-and chainl1: 'a. (t<('a, 'a) => 'a>, t<'a>) => t<'a> = (pf, pa) =>
-  \">>="(pa, a => chainl1'(pf, a, pa))
+and chainl1: 'a. (t<('a, 'a) => 'a>, t<'a>) => t<'a> = (pf, pa) => {
+  pa->\">>="(a => {
+    chainl1'(pf, a, pa)
+  })
+}
 
 @ocaml.doc("
 Parses 1 or more values separated by a left-associative operator.
  ")
-and chainl1': 'a. (t<('a, 'a) => 'a>, 'a, t<'a>) => t<'a> = (pf, a, pa) =>
-  \"<|>"(\">>="(pf, f => \">>="(pa, a2 => chainl1'(pf, f(a, a2), pa))), pure(a))
-
+and chainl1': 'a. (t<('a, 'a) => 'a>, 'a, t<'a>) => t<'a> = (pf, a, pa) => {
+  pf
+  ->\">>="(f => {
+    pa->\">>="(a2 => {
+      chainl1'(pf, f(a, a2), pa)
+    })
+  })
+  ->\"<|>"(pure(a))
+}
 @ocaml.doc("
 Parses a value using any of the given parsers (first successful wins from left-to-right)
 ")
-let anyOf: 'a. list<t<'a>> => t<'a> = ps => List.foldLeft(\"<|>", fail("Nothing to parse"), ps)
+let anyOf: 'a. list<t<'a>> => t<'a> = ps => {
+  List.foldLeft((a, b) => {
+    \"<|>"(a, b)
+  }, fail("Nothing to parse"), ps)
+}
 
 @ocaml.doc("
  * Converts a parser of an `option('a)` into a parser of `'a`, failing if the value is `None`
  ")
-let getSome: 'a. t<option<'a>> => t<'a> = popt =>
-  \">>="(popt, x =>
+let getSome: 'a. t<option<'a>> => t<'a> = popt => {
+  popt->\">>="(x =>
     switch x {
     | Some(a) => pure(a)
     | None => fail("Expected a non-empty option value")
     }
   )
+}
 
 @ocaml.doc("
  * Converts a parser of a string into a parser of a non-empty string, failing if the value is \"\"
  ")
-let getNonEmptyStr: t<string> => t<string> = pstr =>
-  \">>="(pstr, str =>
-    if str |> Relude.String.isEmpty {
+let getNonEmptyStr: t<string> => t<string> = pstr => {
+  pstr->\">>="(str => {
+    if str->Relude.String.isEmpty {
       fail("Expected a non-empty string")
     } else {
       pure(str)
     }
-  )
+  })
+}
 
 @ocaml.doc("
  * Converts a parser of a tuple2 into a parser of the first value.
  ")
-let getFst: 'a 'b. t<('a, 'b)> => t<'a> = pab => \"<#>"(pab, ((a, _)) => a)
+let getFst: 'a 'b. t<('a, 'b)> => t<'a> = pab => pab->\"<$$>"(((a, _)) => a)
 
 @ocaml.doc("
  * Converts a parser of a tuple2 into a parser of the second value.
  ")
-let getSnd: 'a 'b. t<('a, 'b)> => t<'b> = pab => \"<#>"(pab, ((_, b)) => b)
+let getSnd: 'a 'b. t<('a, 'b)> => t<'b> = pab => pab->\"<$$>"(((_, b)) => b)
 
 @ocaml.doc("
 Parses 0 or more values up until an end value, producing a list of values and the end value
@@ -578,11 +657,11 @@ Parses 0 or more values up until an end value, producing a list of values and th
 let rec manyUntilWithEnd: 'a 'terminator. (t<'terminator>, t<'a>) => t<(list<'a>, 'terminator)> = (
   pt,
   pa,
-) =>
-  \"<|>"(
-    \">>="(pt, term => pure((list{}, term))),
-    \"<#>"(many1UntilWithEnd(pt, pa), ((nel, term)) => (Nel.toList(nel), term)),
-  )
+) => {
+  pt
+  ->\">>="(term => pure((list{}, term)))
+  ->\"<|>"(many1UntilWithEnd(pt, pa)->\"<$$>"(((nel, term)) => (Nel.toList(nel), term)))
+}
 
 @ocaml.doc("
 Parses 1 or more values up until an end value, producing the Nel of values and the end value
@@ -592,23 +671,23 @@ TODO: not stack safe
 and many1UntilWithEnd: 'a 'terminator. (t<'terminator>, t<'a>) => t<(Nel.t<'a>, 'terminator)> = (
   pt,
   pa,
-) =>
-  \">>="(pa, a =>
-    \"<|>"(
-      \"<#>"(pt, term => (Nel.pure(a), term)),
-      \"<#>"(many1UntilWithEnd(pt, pa), ((nel, term)) => (Nel.cons(a, nel), term)),
-    )
-  )
+) => {
+  pa->\">>="(a => {
+    pt
+    ->\"<$$>"(term => (Nel.pure(a), term))
+    ->\"<|>"(many1UntilWithEnd(pt, pa)->\"<$$>"(((nel, term)) => (Nel.cons(a, nel), term)))
+  })
+}
 
 @ocaml.doc("
 Parses 0 or more values up until an end value, producing a list of values and consuming and throwing away the end value
  ")
-let manyUntil = (pt, pa) => manyUntilWithEnd(pt, pa) |> getFst
+let manyUntil = (pt, pa) => manyUntilWithEnd(pt, pa)->getFst
 
 @ocaml.doc("
 Parses 1 or more values up until an end value, producing a list of values and consuming and throwing away the end value
  ")
-let many1Until = (pt, pa) => many1UntilWithEnd(pt, pa) |> getFst
+let many1Until = (pt, pa) => many1UntilWithEnd(pt, pa)->getFst
 
 @ocaml.doc("
  * Parses 0 or more values up until an end value, and produces the values and end value, without consuming the end value.
@@ -616,11 +695,11 @@ let many1Until = (pt, pa) => many1UntilWithEnd(pt, pa) |> getFst
 let rec manyUntilPeekWithEnd: 'a 'terminator. (
   t<'terminator>,
   t<'a>,
-) => t<(list<'a>, 'terminator)> = (pt, pa) =>
-  \"<|>"(
-    \">>="(lookAhead(pt), term => pure((list{}, term))),
-    \"<#>"(many1UntilPeekWithEnd(pt, pa), ((nel, term)) => (Nel.toList(nel), term)),
-  )
+) => t<(list<'a>, 'terminator)> = (pt, pa) => {
+  lookAhead(pt)
+  ->\">>="(term => pure((list{}, term)))
+  ->\"<|>"(many1UntilPeekWithEnd(pt, pa)->\"<$$>"(((nel, term)) => (Nel.toList(nel), term)))
+}
 
 @ocaml.doc("
  * Parses 1 or more values up until an end value, and produces the values and end value, without consuming the end value.
@@ -628,37 +707,36 @@ let rec manyUntilPeekWithEnd: 'a 'terminator. (
 and many1UntilPeekWithEnd: 'a 'terminator. (
   t<'terminator>,
   t<'a>,
-) => t<(Nel.t<'a>, 'terminator)> = (pt, pa) =>
-  \">>="(pa, a =>
-    \"<|>"(
-      \"<#>"(lookAhead(pt), term => (Nel.pure(a), term)),
-      \"<#>"(many1UntilPeekWithEnd(pt, pa), ((nel, term)) => (Nel.cons(a, nel), term)),
-    )
-  )
+) => t<(Nel.t<'a>, 'terminator)> = (pt, pa) => {
+  pa->\">>="(a => {
+    lookAhead(pt)
+    ->\"<$$>"(term => (Nel.pure(a), term))
+    ->\"<|>"(many1UntilPeekWithEnd(pt, pa)->\"<$$>"(((nel, term)) => (Nel.cons(a, nel), term)))
+  })
+}
 
 @ocaml.doc("
  * Parses 0 or more values up until an end value, and produces the values, without consuming the end value.
  ")
-let manyUntilPeek = (pt, pa) => manyUntilPeekWithEnd(pt, pa) |> getFst
+let manyUntilPeek = (pt, pa) => manyUntilPeekWithEnd(pt, pa)->getFst
 
 @ocaml.doc("
  * Parses 1 or more values up until an end value, and produces the values, without consuming the end value.
  ")
-let many1UntilPeek = (pt, pa) => many1UntilPeekWithEnd(pt, pa) |> getFst
+let many1UntilPeek = (pt, pa) => many1UntilPeekWithEnd(pt, pa)->getFst
 
 @ocaml.doc("
 Checks if the given parse result passes a predicate
  ")
-let filter: 'a. ('a => bool, t<'a>) => t<'a> = (pred, pa) =>
-  tries(
-    pa |> flatMap(a =>
-      if pred(a) {
-        pure(a)
-      } else {
-        fail("Result did not pass filter predicate")
-      }
-    ),
-  )
+let filter: 'a. ('a => bool, t<'a>) => t<'a> = (pred, pa) => {
+  tries(pa->(flatMap(a =>
+        if pred(a) {
+          pure(a)
+        } else {
+          fail("Result did not pass filter predicate")
+        }
+      , _)))
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Text parsers
@@ -682,7 +760,7 @@ let eof: t<unit> = Parser(
  *
  * This might be useful for parsing delimited values, which can optionally end with eof.
  ")
-let orEOF: 'a. t<'a> => t<unit> = pa => \"<|>"(pa |> void, eof)
+let orEOF: 'a. t<'a> => t<unit> = pa => pa->void->\"<|>"(eof)
 
 @ocaml.doc("
 Matches any character
@@ -739,32 +817,36 @@ let notChar: string => t<string> = input => Parser(
 Matches any digit 0-9 and converts it to an int
 ")
 let anyDigitAsInt: t<int> = tries(
-  \">>="(anyChar, c =>
+  anyChar->\">>="(c => {
     c
-    |> String.toInt
-    |> Option.foldLazy(_ => fail("Expected a digit, but found character '" ++ (c ++ "'")), pure)
-  ),
+    ->String.toInt
+    ->(Option.foldLazy(_ => fail("Expected a digit, but found character '" ++ (c ++ "'")), pure, _))
+  }),
 )
 
 @ocaml.doc("
 Matches any digit 0-9 as a string
 ")
-let anyDigit: t<string> = \"<$>"(string_of_int, anyDigitAsInt)
+let anyDigit: t<string> = string_of_int->\"<$>"(anyDigitAsInt)
 
 @ocaml.doc("
 Matches any string (warning: this will likely consume as much input as possible)
  ")
-let anyStr: t<string> = \"<#>"(many(anyChar), List.String.join)
+let anyStr: t<string> = many(anyChar)->\"<$$>"(List.String.join)
 
 @ocaml.doc("
 Matches any non-empty string
  ")
-let anyNonEmptyStr: t<string> = \"<#>"(many1(anyChar), \">>"(Nel.toList, List.String.join))
+let anyNonEmptyStr: t<string> = {
+  many1(anyChar)->\"<$$>"(\">>"(Nel.toList, List.String.join, _))
+}
 
 @ocaml.doc("
 Matches any non-empty string of digits
  ")
-let anyNonEmptyDigits: t<string> = \"<#>"(many1(anyDigit), \">>"(Nel.toList, List.String.join))
+let anyNonEmptyDigits: t<string> = {
+  many1(anyDigit)->\"<$$>"(\">>"(Nel.toList, List.String.join, _))
+}
 
 @ocaml.doc("
 Matches the given string (case-sensitive)
@@ -811,16 +893,17 @@ let strIgnoreCase: string => t<string> = toMatch => Parser(
 @ocaml.doc("
 Matches a single char that passes the given predicate
 ")
-let anyCharBy: (string => bool) => t<string> = pred =>
+let anyCharBy: (string => bool) => t<string> = pred => {
   tries(
-    \">>="(anyChar, c =>
+    anyChar->\">>="(c => {
       if pred(c) {
         pure(c)
       } else {
         fail("Expected char to pass a predicate")
       }
-    ),
+    }),
   )
+}
 
 @ocaml.doc("
 Matches any of the given strings (case-sensitive)
@@ -841,7 +924,7 @@ let wsList: t<list<string>> = many(anyOfStr(list{" ", "\t", "\r", "\n"}))
 @ocaml.doc("
 Matches any amount of whitespace, and returns it as a single string
  ")
-let wsStr: t<string> = \"<$>"(List.String.join, wsList)
+let wsStr: t<string> = List.String.join->\"<$>"(wsList)
 
 @ocaml.doc("
 Matches any amount of whitespace, and ignores it (returns unit)
@@ -852,22 +935,22 @@ let ws: t<unit> = void(wsList)
 Matches any char except for any of the given chars (case-sensitive)
  ")
 let anyCharNotIn: list<string> => t<string> = blacklist =>
-  anyCharBy(c => !(blacklist |> List.String.contains(c)))
+  anyCharBy(c => !List.String.contains(c, blacklist))
 
 @ocaml.doc("
 Matches any char except for any of the given chars (case-insensitive)
  ")
 let anyCharNotInIgnoreCase: list<string> => t<string> = blacklist => {
-  let blacklistLower = blacklist |> List.map(String.toLowerCase)
-  anyCharBy(c => !(blacklistLower |> List.String.contains(String.toLowerCase(c))))
+  let blacklistLower = List.map(String.toLowerCase, blacklist)
+  anyCharBy(c => !List.String.contains(String.toLowerCase(c), blacklistLower))
 }
 
 @ocaml.doc("
 Parses any character in the range of ASCII codes min (inclusive) to max (inclusive)
 ")
-let anyCharInRange: (int, int) => t<string> = (min, max) =>
+let anyCharInRange: (int, int) => t<string> = (min, max) => {
   tries(
-    \">>="(anyChar, c => {
+    anyChar->\">>="(c => {
       let intValue = Js.Math.floor(Js.String.charCodeAt(0, c))
       if min <= intValue && intValue <= max {
         pure(c)
@@ -880,6 +963,7 @@ let anyCharInRange: (int, int) => t<string> = (min, max) =>
       }
     }),
   )
+}
 
 @ocaml.doc("
 Matches any character that is not a digit
@@ -894,93 +978,99 @@ let anyNonZeroDigit: t<string> = anyCharInRange(49, 57)
 @ocaml.doc("
 Matches any non-zero digit character as an int
  ")
-let anyNonZeroDigitAsInt: t<int> = \"<#>"(anyNonZeroDigit, int_of_string)
+let anyNonZeroDigitAsInt: t<int> = anyNonZeroDigit->\"<$$>"(int_of_string)
 
 @ocaml.doc("
 Matches a string of digits starting with a 0 or a digit 1-9 followed by any other digits
  ")
-let anyUnsignedInt: t<int> = \"<|>"(
-  \"<#>"(str("0"), int_of_string),
-  \">>="(anyNonZeroDigit, nonZeroDigit =>
-    \"<#>"(\"<#>"(many(anyDigit), List.String.join), otherDigits =>
-      int_of_string(nonZeroDigit ++ otherDigits)
-    )
-  ), // int_of_string is unsafe, but we are relatively sure we have a valid int string here, so we'll allow it
-)
+let anyUnsignedInt: t<int> = {
+  str("0")
+  ->\"<$$>"(int_of_string)
+  ->\"<|>"(
+    anyNonZeroDigit->\">>="(nonZeroDigit => {
+      many(anyDigit)
+      ->\"<$$>"(List.String.join)
+      ->\"<$$>"(otherDigits => int_of_string(nonZeroDigit ++ otherDigits))
+    }), // int_of_string is unsafe, but we are relatively sure we have a valid int string here, so we'll allow it
+  )
+}
 
 @ocaml.doc("
 Matches an unsigned int, or an int starting with a + sign
  ")
-let anyPositiveInt: t<int> = \"<|>"(anyUnsignedInt, \"*>"(str("+"), anyUnsignedInt))
+let anyPositiveInt: t<int> = anyUnsignedInt->\"<|>"(str("+")->\"*>"(anyUnsignedInt))
 
 @ocaml.doc("
 Matches a \"-\" negative sign followed by a digit 1-9, followed by any other digits
  ")
-let anyNegativeInt: t<int> = \"<?>"(
-  \"<#>"(\"*>"(str("-"), anyUnsignedInt), i => i * -1),
-  "Expected any negative int",
-)
+let anyNegativeInt: t<int> = {
+  str("-")
+  ->\"*>"(anyUnsignedInt)
+  ->\"<$$>"(i => i * -1)
+  ->\"<?>"("Expected any negative int")
+}
 
 @ocaml.doc("
 Matches any int (negative or positive)
 ")
-let anyInt = \"<?>"(
-  \"<|>"(anyNegativeInt, anyPositiveInt),
-  "Expected any int (negative or positive)",
-)
+let anyInt = {
+  anyNegativeInt
+  ->\"<|>"(anyPositiveInt)
+  ->\"<?>"("Expected any int (negative or positive)")
+}
 
 @ocaml.doc("
 Matches a positive short (0-255)
  ")
-let anyUnsignedShort: t<int> = tries(
-  \"<?>"(anyPositiveInt |> filter(i => i <= 255), "Expected a positive short (0 - 255)"),
-)
+let anyUnsignedShort: t<int> = {
+  tries(
+    anyPositiveInt
+    ->filter(i => i <= 255, _)
+    ->\"<?>"("Expected a positive short (0 - 255)"),
+  )
+}
 
 @ocaml.doc("
 Matches a short with an optional leading + sign
 ")
-let anyPositiveShort: t<int> = \"*>"(opt(str("+")), anyUnsignedShort)
+let anyPositiveShort: t<int> = opt(str("+"))->\"*>"(anyUnsignedShort)
 
 @ocaml.doc("
 Matches any lower-case char (ASCII code 97-122)
 ")
-let anyLowerCaseChar: t<string> = \"<?>"(anyCharInRange(97, 122), "Expected lower-case character")
+let anyLowerCaseChar: t<string> = anyCharInRange(97, 122)->\"<?>"("Expected lower-case character")
 
 @ocaml.doc("
 Matches any lower-case char (ASCII code 65-90)
 ")
-let anyUpperCaseChar: t<string> = \"<?>"(anyCharInRange(65, 90), "Expected upper-case character")
+let anyUpperCaseChar: t<string> = anyCharInRange(65, 90)->\"<?>"("Expected upper-case character")
 
 @ocaml.doc("
 Matches any alpha character (a-z and A-Z)
 ")
-let anyAlpha: t<string> = \"<?>"(
-  \"<|>"(anyLowerCaseChar, anyUpperCaseChar),
-  "Expected any alphabet letter (upper or lowercase)",
-)
+let anyAlpha: t<string> =
+  anyLowerCaseChar
+  ->\"<|>"(anyUpperCaseChar)
+  ->\"<?>"("Expected any alphabet letter (upper or lowercase)")
 
 @ocaml.doc("
 Matches any alpha or digit character
  ")
-let anyAlphaOrDigit: t<string> = \"<?>"(
-  \"<|>"(anyAlpha, anyDigit),
-  "Expected any alpha character or any digit",
-)
+let anyAlphaOrDigit: t<string> =
+  anyAlpha->\"<|>"(anyDigit)->\"<?>"("Expected any alpha character or any digit")
 
 @ocaml.doc("
 Matches any hex digit 0-9, a-f, or A-F ")
 let anyHexDigit: t<string> = \"<?>"(
-  \"<|>"(anyDigit, anyOfStrIgnoreCase(list{"a", "b", "c", "d", "e", "f"})),
+  anyDigit->\"<|>"(anyOfStrIgnoreCase(list{"a", "b", "c", "d", "e", "f"})),
   "Expected any hex digit",
 )
 
 @ocaml.doc("
 Matches any hex digit except \"0\"
  ")
-let anyNonZeroHexDigit: t<string> = \"<?>"(
-  anyHexDigit |> filter(c => c != "0"),
-  "Expected any non-zero hex digit",
-)
+let anyNonZeroHexDigit: t<string> =
+  anyHexDigit->filter(c => c != "0", _)->\"<?>"("Expected any non-zero hex digit")
 
 @ocaml.doc("
 Matches the given regular expression.
@@ -1008,17 +1098,21 @@ let regex: Js.Re.t => t<string> = regex => Parser(
     | None => Error({error: parseError(), pos})
     | Some(result) =>
       let captures: array<Js.nullable<string>> = Js.Re.captures(result)
+
       Array.head(captures)
-      |> Option.flatMap(Js.Nullable.toOption)
-      |> Option.foldLazy(
-        () => Belt.Result.Error({error: parseError(), pos}),
-        match_ => Belt.Result.Ok({
-          result: match_,
-          suffix: {
-            str,
-            pos: pos + String.length(match_),
-          },
-        }),
+      ->Option.flatMap(x => Js.Nullable.toOption(x), _)
+      ->(
+        Option.foldLazy(
+          () => Belt.Result.Error({error: parseError(), pos}),
+          match_ => Belt.Result.Ok({
+            result: match_,
+            suffix: {
+              str,
+              pos: pos + String.length(match_),
+            },
+          }),
+          _,
+        )
       )
     }
   },
@@ -1048,49 +1142,46 @@ let anyUnsignedDecimalWithoutLeadingDigits: t<string> = regex(%re("/\.\d+(?:e-?\
 @ocaml.doc("
 Matches a decimal value like 123.456 or 1.23e-3 or .456 or .23e-3, returned as a string
 ")
-let anyUnsignedDecimal: t<string> = \"<?>"(
-  \"<|>"(anyUnsignedDecimalWithLeadingDigits, anyUnsignedDecimalWithoutLeadingDigits),
-  "Expected an unsigned decimal",
-)
+let anyUnsignedDecimal: t<string> =
+  anyUnsignedDecimalWithLeadingDigits
+  ->\"<|>"(anyUnsignedDecimalWithoutLeadingDigits)
+  ->\"<?>"("Expected an unsigned decimal")
 
 @ocaml.doc("
 Matches a decimal that starts with an optional + sign
  ")
-let anyPositiveDecimal: t<string> = \"<?>"(
-  \"*>"(opt(str("+")), anyUnsignedDecimal),
-  "Expected a positive decimal",
-)
+let anyPositiveDecimal: t<string> =
+  opt(str("+"))->\"*>"(anyUnsignedDecimal)->\"<?>"("Expected a positive decimal")
 
 @ocaml.doc("
 Matches a decimal that starts with an - sign
  ")
-let anyNegativeDecimal: t<string> = \"<?>"(
-  (str("-"), anyUnsignedDecimal) |> mapTuple2(String.concat),
-  "Expected a negative decimal",
-)
+let anyNegativeDecimal: t<string> =
+  (str("-"), anyUnsignedDecimal)
+  ->mapTuple2(String.concat, _)
+  ->\"<?>"("Expected a negative decimal")
 
 @ocaml.doc("
 Matches a negative or positive decimal
  ")
-let anyDecimal: t<string> = \"<?>"(
-  \"<|>"(anyNegativeDecimal, anyPositiveDecimal),
-  "Expected any decimal",
-)
+let anyDecimal: t<string> =
+  anyNegativeDecimal->\"<|>"(anyPositiveDecimal)->\"<?>"("Expected any decimal")
 
 @ocaml.doc("
 Matches a string \"true\" (case-insensitive)
  ")
-let boolTrue: t<bool> = \"<#>"(strIgnoreCase("true"), _ => true)
+let boolTrue: t<bool> = strIgnoreCase("true")->\"<$$>"(_ => true)
 
 @ocaml.doc("
 Matches a string \"false\" (case-insensitive)
  ")
-let boolFalse: t<bool> = \"<#>"(strIgnoreCase("false"), _ => false)
+let boolFalse: t<bool> = strIgnoreCase("false")->\"<$$>"(_ => false)
 
 @ocaml.doc("
 Matches true or false
  ")
-let anyBool: t<bool> = \"<?>"(\"<|>"(boolTrue, boolFalse), "Expected a bool")
+let anyBool: t<bool> =
+  boolTrue->\"<|>"(boolFalse)->\"<?>"("Expected a bool")
 
 @ocaml.doc("
 Matches a (
@@ -1106,7 +1197,7 @@ let rightParen: t<string> = str(")")
 Parses a value from between ( and ), stripping out extra whitespace inside the ()'s
 ")
 let betweenParens: 'a. t<'a> => t<'a> = pa =>
-  between(leftParen, rightParen, \"<*"(\"*>"(ws, pa), ws))
+  between(leftParen, rightParen, ws->\"*>"(pa)->\"<*"(ws))
 
 @ocaml.doc("
 Matches a {
@@ -1122,7 +1213,7 @@ let rightCurly: t<string> = str("}")
 Parses a value from between { and }, stripping out extra whitespace inside the {}'s
 ")
 let betweenCurlies: 'a. t<'a> => t<'a> = pa =>
-  between(leftCurly, rightCurly, \"<*"(\"*>"(ws, pa), ws))
+  between(leftCurly, rightCurly, ws->\"*>"(pa)->\"<*"(ws))
 
 @ocaml.doc("
 Matches a [
@@ -1138,7 +1229,7 @@ let rightSquare: t<string> = str("]")
 Parses a value from between [ and ], stripping out extra whitespace inside the []'s
 ")
 let betweenSquares: 'a. t<'a> => t<'a> = pa =>
-  between(leftSquare, rightSquare, \"<*"(\"*>"(ws, pa), ws))
+  between(leftSquare, rightSquare, ws->\"*>"(pa)->\"<*"(ws))
 
 @ocaml.doc("
 Matches a <
@@ -1154,7 +1245,7 @@ let rightAngle: t<string> = str(">")
 Parses a value from between < and >, stripping out extra whitespace inside the <>'s
 ")
 let betweenAngles: 'a. t<'a> => t<'a> = pa =>
-  between(leftAngle, rightAngle, \"<*"(\"*>"(ws, pa), ws))
+  between(leftAngle, rightAngle, ws->\"*>"(pa)->\"<*"(ws))
 
 @ocaml.doc("
 Matches a double quote character
@@ -1199,14 +1290,17 @@ let lf: t<string> = str("\n")
 @ocaml.doc("
  * Matches a \r\n carriage return + line feed line ending
  ")
-let crlf: t<string> = \"<#>"(\"<^>"(cr, lf), ((a, b)) => a ++ b)
+let crlf: t<string> = {
+  cr->\"<^>"(lf)->\"<$$>"(((a, b)) => a ++ b)
+}
 
 @ocaml.doc("
  * Matches any of the common line endings `\r\n`, `\n` or `\r`
  ")
-let eol: t<string> = \"<|>"(\"<|>"(tries(crlf), lf), cr)
+let eol: t<string> =
+  tries(crlf)->\"<|>"(lf)->\"<|>"(cr)
 
 @ocaml.doc("
  * Matches the given parser, or EOL
  ")
-let orEOL: 'a. t<'a> => t<unit> = pa => \"<|>"(pa |> void, eol |> void)
+let orEOL: 'a. t<'a> => t<unit> = pa => pa->void->\"<|>"(eol->void)

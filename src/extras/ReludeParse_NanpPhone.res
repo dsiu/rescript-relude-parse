@@ -1,3 +1,6 @@
+@@uncurried
+@@uncurried.swap
+
 open Relude.Globals
 module Parser = ReludeParse_Parser
 
@@ -6,12 +9,9 @@ module AreaCode = {
 
   let parser = {
     open Parser
-    (
-      opt(str("(")),
-      filter(v => v != 1, anyDigitAsInt),
-      times2(anyDigitAsInt),
-      opt(str(")")),
-    ) |> mapTuple4((_, a, (b, c), _) => AreaCode(a, b, c))
+    (opt(str("(")), filter(v => v != 1, anyDigitAsInt), times2(anyDigitAsInt), opt(str(")")))->(
+      mapTuple4((_, a, (b, c), _) => AreaCode(a, b, c), _)
+    )
   }
 }
 
@@ -22,7 +22,7 @@ module Exchange = {
   // pattern x11
   let parser = {
     open Parser
-    times3(anyDigitAsInt) |> map(((a, b, c)) => Exchange(a, b, c))
+    times3(anyDigitAsInt)->(map(((a, b, c)) => Exchange(a, b, c), _))
   }
 }
 
@@ -31,7 +31,7 @@ module Line = {
 
   let parser = {
     open Parser
-    times4(anyDigitAsInt) |> map(((a, b, c, d)) => Line(a, b, c, d))
+    times4(anyDigitAsInt)->(map(((a, b, c, d)) => Line(a, b, c, d), _))
   }
 }
 
@@ -56,45 +56,33 @@ let sep = Parser.anyOfStr(list{"-", "."})
 
 let parser: Parser.t<t> = {
   open Parser
-  \"<*"(
-    \"<*"(
-      \"<*>"(
-        \"<*"(
-          \"<*"(
-            \"<*>"(
-              \"<*"(
-                \"<*"(
-                  \"<$>"(
-                    make,
-                    \"*>"(
-                      \"*>"(\"*>"(ws, opt(\"<|>"(\"*>"(str("+"), str("1")), str("1")))), ws),
-                      AreaCode.parser,
-                    ),
-                  ),
-                  opt(sep),
-                ),
-                ws,
-              ),
-              Exchange.parser,
-            ),
-            opt(sep),
-          ),
-          ws,
-        ),
-        Line.parser,
-      ),
-      ws,
-    ),
-    eof,
+
+  {
+    open Relude.Function
+    make->uncurryFn3
+  }
+  ->\"<$>"(
+    ws
+    ->\"*>"(opt(str("+")->\"*>"(str("1"))->\"<|>"(str("1"))))
+    ->\"*>"(ws)
+    ->\"*>"(AreaCode.parser),
   )
+  ->\"<*"(opt(sep))
+  ->\"<*"(ws)
+  ->\"<*>"(Exchange.parser)
+  ->\"<*"(opt(sep))
+  ->\"<*"(ws)
+  ->\"<*>"(Line.parser)
+  ->\"<*"(ws)
+  ->\"<*"(eof)
 }
 
 let parse = str => Parser.runParser(str, parser)
 
-let parseOption = \">>"(parse, Result.getOk)
+let parseOption = \">>"(parse, Result.getOk, _)
 
 let unsafeFromString = str =>
-  parse(str) |> Result.fold(e => failwith(ReludeParse_Parser.ParseError.show(e)), id)
+  parse(str)->(Result.fold(e => failwith(ReludeParse_Parser.ParseError.show(e)), id, _))
 
 type format =
   | Local // 754-3010

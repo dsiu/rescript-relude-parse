@@ -1,3 +1,6 @@
+@@uncurried
+@@uncurried.swap
+
 @ocaml.doc("
  * IPv4 represents an address that matches the pattern `127.0.0.1`. The four
  * ints have to be positive, in the range 0...255, and they are separated by a

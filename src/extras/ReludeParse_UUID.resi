@@ -1,3 +1,6 @@
+@@uncurried
+@@uncurried.swap
+
 @ocaml.doc("
  * UUID.t represents a universally unique identifier, made up of 32 hexadecimal
  * digits in the format `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`. Its

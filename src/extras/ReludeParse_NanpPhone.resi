@@ -1,3 +1,6 @@
+@@uncurried
+@@uncurried.swap
+
 module AreaCode: {
   @ocaml.doc("
    * An area code is the first 3 digits after the country code.

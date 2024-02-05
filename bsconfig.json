@@ -13,7 +13,7 @@
   ],
   "package-specs": {
     "module": "commonjs",
-    "in-source": false
+    "in-source": true
   },
   "suffix": ".bs.js",
   "namespace": false,
@@ -22,7 +22,7 @@
     "relude"
   ],
   "bs-dev-dependencies": [
-    "@glennsl/bs-jest"
+    "@glennsl/rescript-jest",
   ],
   "warnings": {
     "number": "+A-9-40-42",

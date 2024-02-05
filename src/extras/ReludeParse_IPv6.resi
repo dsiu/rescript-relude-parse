@@ -1,3 +1,6 @@
+@@uncurried
+@@uncurried.swap
+
 @ocaml.doc("
  * A type representing v6 of the IP address standard.
  ")

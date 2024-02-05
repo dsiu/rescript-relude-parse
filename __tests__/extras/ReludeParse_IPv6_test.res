@@ -1,3 +1,6 @@
+@@uncurried
+@@uncurried.swap
+
 open Jest
 open Expect
 open TestUtils
@@ -13,7 +16,7 @@ describe("ReludeParse_IPv6", () => {
       (IPv6.unsafeFromInts(16, 0, 0, 0, 0, 0, 0, 1), "10:0:0:0:0:0:0:1"),
       (IPv6.unsafeFromInts(17, 0, 0, 0, 0, 0, 0, 255), "11:0:0:0:0:0:0:ff"),
     },
-    ((ip, str)) => expect(IPv6.show(ip)) |> toEqual(str),
+    ((ip, str)) => expect(IPv6.show(ip))->toEqual(str),
   )
 
   testAll(
@@ -79,7 +82,7 @@ describe("ReludeParse_IPv6", () => {
       ("ffff::ffff:ffff:ffff", IPv6.unsafeFromInts(65535, 0, 0, 0, 0, 65535, 65535, 65535), 20),
       ("ffff::ffff:ffff", IPv6.unsafeFromInts(65535, 0, 0, 0, 0, 0, 65535, 65535), 15),
     },
-    ((str, exp, pos)) => testParse(\"<*"(IPv6.parser, P.eof), str, exp, {pos: pos, str: str}),
+    ((str, exp, pos)) => testParse(\"<*"(IPv6.parser, P.eof), str, exp, {pos, str}),
   )
 
   testAll(
@@ -96,12 +99,12 @@ describe("ReludeParse_IPv6", () => {
   )
 
   test("parseOption (success)", () =>
-    expect(IPv6.parseOption("ffff::ffff:ffff:ffff")) |> toEqual(
+    expect(IPv6.parseOption("ffff::ffff:ffff:ffff"))->toEqual(
       Some(IPv6.unsafeFromInts(65535, 0, 0, 0, 0, 65535, 65535, 65535)),
     )
   )
 
-  test("parseOption (failure)", () => expect(IPv6.parseOption("z:z:z:z:z:z:z:z")) |> toEqual(None))
+  test("parseOption (failure)", () => expect(IPv6.parseOption("z:z:z:z:z:z:z:z"))->toEqual(None))
 
-  test("unsafeFromString (throws)", () => expect(() => IPv6.unsafeFromString("x")) |> toThrow)
+  test("unsafeFromString (throws)", () => expect(() => IPv6.unsafeFromString("x"))->toThrow)
 })

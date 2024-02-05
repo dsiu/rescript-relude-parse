@@ -1,10 +1,13 @@
+@@uncurried
+@@uncurried.swap
+
 open Jest
 open Expect
 open TestUtils
 module IPv4 = ReludeParse.IPv4
 
 describe("ReludeParse_IPv4", () => {
-  test("show", () => expect(IPv4.show(IPv4.unsafeFromInts(127, 0, 0, 1))) |> toEqual("127.0.0.1"))
+  test("show", () => expect(IPv4.show(IPv4.unsafeFromInts(127, 0, 0, 1)))->toEqual("127.0.0.1"))
 
   testAll(
     "valid",
@@ -15,7 +18,7 @@ describe("ReludeParse_IPv4", () => {
       ("127.0.0.1", IPv4.unsafeFromInts(127, 0, 0, 1), 9),
       ("255.255.255.255", IPv4.unsafeFromInts(255, 255, 255, 255), 15),
     },
-    ((str, exp, pos)) => testParse(IPv4.parser, str, exp, {pos: pos, str: str}),
+    ((str, exp, pos)) => testParse(IPv4.parser, str, exp, {pos, str}),
   )
 
   testAll(
@@ -32,10 +35,10 @@ describe("ReludeParse_IPv4", () => {
   )
 
   test("parseOption (success)", () =>
-    expect(IPv4.parseOption("0.0.0.0")) |> toEqual(Some(IPv4.unsafeFromInts(0, 0, 0, 0)))
+    expect(IPv4.parseOption("0.0.0.0"))->toEqual(Some(IPv4.unsafeFromInts(0, 0, 0, 0)))
   )
 
   test("unsafeFromString (fails with exception)", () =>
-    expect(() => IPv4.unsafeFromString("123")) |> toThrow
+    expect(() => IPv4.unsafeFromString("123"))->toThrow
   )
 })
