@@ -28,7 +28,7 @@
     "relude": "github:dsiu/rescript-relude#rescript-v11-uncurried-wip"
   },
   "devDependencies": {
-    "rescript": "^11.0.1",
+    "rescript": "^11.1.0-rc.2",
     "@glennsl/rescript-jest": "^0.10.0",
     "bs-bastet": "github:dsiu/rescript-bastet#rescript-v11-uncurried-wip",
     "relude": "github:dsiu/rescript-relude#rescript-v11-uncurried-wip"

@@ -85,7 +85,7 @@ let runParser: 'a. (string, t<'a>) => Belt.Result.t<'a, ParseError.t> = (input, 
 @ocaml.doc("
 Map a pure function over a parser.
 ")
-let map: 'a 'b. (. 'a => 'b, t<'a>) => t<'b> = (f, Parser(pa)) => Parser(
+let map: 'a 'b. ('a => 'b, t<'a>) => t<'b> = (f, Parser(pa)) => Parser(
   posString => pa(posString)->(Result.map(({result, suffix}) => {result: f(result), suffix}, _)),
 )
 
@@ -131,7 +131,7 @@ let tapLog: t<'a> => t<'a> = pa =>
 @ocaml.doc("
 Apply a wrapped function to a parser.
 ")
-let apply: 'a 'b. (. t<'a => 'b>, t<'a>) => t<'b> = (Parser(pf), Parser(pa)) => Parser(
+let apply: 'a 'b. (t<'a => 'b>, t<'a>) => t<'b> = (Parser(pf), Parser(pa)) => Parser(
   posString =>
     pf(posString)->(
       Result.flatMap(
@@ -173,7 +173,7 @@ include Relude.Extensions.Applicative.ApplicativeExtensions(Applicative)
 @ocaml.doc("
 Attempts to run a parser on the left, and if it fails, attempts the other parser on the right.
 ")
-let alt: 'a. (. t<'a>, t<'a>) => t<'a> = (Parser(p1), Parser(p2)) => {
+let alt: 'a. (t<'a>, t<'a>) => t<'a> = (Parser(p1), Parser(p2)) => {
   Parser(
     posString =>
       switch p1(posString) {
@@ -226,7 +226,7 @@ include Relude.Extensions.Alt.AltExtensions(Alt)
 @ocaml.doc("
 Monadic bind for sequencing parsers
 ")
-let bind: 'a 'b. (. t<'a>, 'a => t<'b>) => t<'b> = (Parser(pa), aToPB) => {
+let bind: 'a 'b. (t<'a>, 'a => t<'b>) => t<'b> = (Parser(pa), aToPB) => {
   Parser(posString => pa(posString)->(Result.flatMap(({result: a, suffix: s1}) => {
           let Parser(pb) = aToPB(a)
           pb(s1)
