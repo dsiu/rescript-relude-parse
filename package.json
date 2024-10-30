@@ -28,10 +28,10 @@
     "relude": "github:dsiu/rescript-relude#rescript-v11-uncurried-wip"
   },
   "devDependencies": {
-    "rescript": "^11.1.1",
     "@glennsl/rescript-jest": "^0.11.0",
     "bs-bastet": "github:dsiu/rescript-bastet#rescript-v11-uncurried-wip",
-    "relude": "github:dsiu/rescript-relude#rescript-v11-uncurried-wip"
+    "relude": "github:dsiu/rescript-relude#rescript-v11-uncurried-wip",
+    "rescript": "^11.1.4"
   },
   "jest": {
     "testRunner": "jest-jasmine2",
@@ -44,5 +44,6 @@
       "/node_modules/",
       "/testUtils/"
     ]
-  }
+  },
+  "packageManager": "yarn@1.22.19+sha1.4ba7fc5c6e704fce2066ecbfb0b0d8976fe62447"
 }
