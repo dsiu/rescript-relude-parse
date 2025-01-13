@@ -22,7 +22,7 @@
     "relude"
   ],
   "bs-dev-dependencies": [
-    "@glennsl/rescript-jest",
+    "@glennsl/rescript-jest"
   ],
   "warnings": {
     "number": "+A-9-40-42",
