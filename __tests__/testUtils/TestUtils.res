@@ -17,7 +17,7 @@ let testParse: 'a. (P.t<'a>, string, 'a, P.PosString.t) => assertion = (
     fail(
       "Parser should have succeeded for input: " ++
       (input ++
-      (": " ++ (message ++ (" at pos: " ++ string_of_int(pos))))),
+      (": " ++ (message ++ (" at pos: " ++ Int.toString(pos))))),
     )
   }
 

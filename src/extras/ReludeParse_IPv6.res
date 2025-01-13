@@ -5,6 +5,9 @@ open Relude.Globals
 module P = ReludeParse_Parser
 open P
 
+// TODO: shim to make code compatible with ReScript v12. refactor this later
+let int_of_string = s => s->Int.fromString->Option.getOrThrow
+
 // TODO: not sure if this parser/show is 100 correct for all the possible the
 // abbreviated formats
 
@@ -20,8 +23,8 @@ let show: t => string = x =>
   | IPv6(0, 0, 0, 0, 0, 0, 0, 1) => "::1"
   | IPv6(a, b, c, d, e, f, g, h) =>
     list{a, b, c, d, e, f, g, h}
-    ->List.map(x => Js.Int.toStringWithRadix(~radix=16, x), _)
-    ->(List.String.joinWith(":", _))
+    ->(List.map(x => Js.Int.toStringWithRadix(~radix=16, x), _))
+    ->List.String.joinWith(":", _)
   }
 
 let allZeroGroup: P.t<int> = timesMinMax(1, 4, str("0"))->\"<$$>"(_ => 0)
@@ -47,7 +50,7 @@ let oneZeroPadGroup = {
 }
 let nonZeroPaddedGroup: P.t<int> = {
   (anyNonZeroHexDigit, timesMax(3, anyHexDigit)->\"<$$>"(List.String.join))
-  ->mapTuple2((first, rest) => first ++ rest, _)
+  ->(mapTuple2((first, rest) => first ++ rest, _))
   ->\"<$$>"(hexDigits => int_of_string("0x" ++ hexDigits))
 }
 

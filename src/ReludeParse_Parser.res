@@ -4,6 +4,9 @@
 open BsBastet.Interface
 open Relude.Globals
 
+// TODO: shim to make code compatible with ReScript v12. refactor this later
+let int_of_string = s => s->Int.fromString->Option.getOrThrow
+
 @ocaml.doc("
  * Represents the parse position (i.e. the current index in the string)
  ")
@@ -86,7 +89,7 @@ let runParser: 'a. (string, t<'a>) => Belt.Result.t<'a, ParseError.t> = (input, 
 Map a pure function over a parser.
 ")
 let map: 'a 'b. ('a => 'b, t<'a>) => t<'b> = (f, Parser(pa)) => Parser(
-  posString => pa(posString)->(Result.map(({result, suffix}) => {result: f(result), suffix}, _)),
+  posString => pa(posString)->Result.map(({result, suffix}) => {result: f(result), suffix}, _),
 )
 
 @ocaml.doc("
@@ -102,7 +105,7 @@ include Relude.Extensions.Functor.FunctorExtensions(Functor)
 Inspects a successful parse result using a callback with the value and the suffix
 ")
 let tap: 'a. (('a, PosString.t, PosString.t) => unit, t<'a>) => t<'a> = (f, Parser(pa)) => Parser(
-  posString => pa(posString)->(Result.tap(({result, suffix}) => f(result, posString, suffix), _)),
+  posString => pa(posString)->Result.tap(({result, suffix}) => f(result, posString, suffix), _),
 )
 
 @ocaml.doc("
@@ -114,18 +117,16 @@ or monadic composition of parsers) to inject some unobtrusive logging for that p
 E.g. `many1(anyDigit) |> tapLog`
  ")
 let tapLog: t<'a> => t<'a> = pa =>
-  pa->(
-    tap(
-      (result, posStringBefore, posStringAfter) =>
-        Js.log3(
-          "ReludeParse log: input \"" ++
-          (posStringBefore.str ++
-          ("\" at pos " ++ (string_of_int(posStringBefore.pos) ++ " had result: "))),
-          result,
-          " with resulting pos: " ++ string_of_int(posStringAfter.pos),
-        ),
-      _,
-    )
+  pa->tap(
+    (result, posStringBefore, posStringAfter) =>
+      Js.log3(
+        "ReludeParse log: input \"" ++
+        (posStringBefore.str ++
+        ("\" at pos " ++ (Int.toString(posStringBefore.pos) ++ " had result: "))),
+        result,
+        " with resulting pos: " ++ Int.toString(posStringAfter.pos),
+      ),
+    _,
   )
 
 @ocaml.doc("
@@ -133,12 +134,10 @@ Apply a wrapped function to a parser.
 ")
 let apply: 'a 'b. (t<'a => 'b>, t<'a>) => t<'b> = (Parser(pf), Parser(pa)) => Parser(
   posString =>
-    pf(posString)->(
-      Result.flatMap(
-        ({result: f, suffix: s1}) =>
-          pa(s1)->(Result.flatMap(({result: a, suffix: s2}) => Ok({result: f(a), suffix: s2}), _)),
-        _,
-      )
+    pf(posString)->Result.flatMap(
+      ({result: f, suffix: s1}) =>
+        pa(s1)->Result.flatMap(({result: a, suffix: s2}) => Ok({result: f(a), suffix: s2}), _),
+      _,
     ),
 )
 
@@ -227,10 +226,10 @@ include Relude.Extensions.Alt.AltExtensions(Alt)
 Monadic bind for sequencing parsers
 ")
 let bind: 'a 'b. (t<'a>, 'a => t<'b>) => t<'b> = (Parser(pa), aToPB) => {
-  Parser(posString => pa(posString)->(Result.flatMap(({result: a, suffix: s1}) => {
-          let Parser(pb) = aToPB(a)
-          pb(s1)
-        }, _)))
+  Parser(posString => pa(posString)->Result.flatMap(({result: a, suffix: s1}) => {
+        let Parser(pb) = aToPB(a)
+        pb(s1)
+      }, _))
 }
 
 @ocaml.doc("
@@ -279,10 +278,10 @@ include Relude.Extensions.MonadThrow.MonadThrowExtensions(MonadThrow)
  * Handles an error by creating a new parser from the error
  ")
 let catchError: 'a. (ParseError.t => t<'a>, t<'a>) => t<'a> = (errorToPA, Parser(pa)) => {
-  Parser(posString => pa(posString)->(Relude.Result.catchError(({error}) => {
-          let Parser(pa2) = errorToPA(error)
-          pa2(posString)
-        }, _)))
+  Parser(posString => pa(posString)->Relude.Result.catchError(({error}) => {
+        let Parser(pa2) = errorToPA(error)
+        pa2(posString)
+      }, _))
 }
 
 @ocaml.doc("
@@ -304,7 +303,7 @@ In case of error, the default behavior is to backtrack if no input was consumed.
 let tries: 'a. t<'a> => t<'a> = (Parser(pa)) => {
   Parser(
     ({pos} as posString) => {
-      pa(posString)->(Result.mapError(({error}) => {pos, error}, _))
+      pa(posString)->Result.mapError(({error}) => {pos, error}, _)
     },
   )
 }
@@ -391,7 +390,7 @@ TODO: not stack safe - purescript-string-parsers uses manyRec the MonadRec versi
 ")
 let rec many: 'a. t<'a> => t<list<'a>> = pa => {
   pa
-  ->\">>="(a => (List.cons(a, _))->\"<$>"(many(pa)))
+  ->\">>="(a => List.cons(a, _)->\"<$>"(many(pa)))
   ->\"<|>"(pure(list{}))
 }
 
@@ -729,13 +728,13 @@ let many1UntilPeek = (pt, pa) => many1UntilPeekWithEnd(pt, pa)->getFst
 Checks if the given parse result passes a predicate
  ")
 let filter: 'a. ('a => bool, t<'a>) => t<'a> = (pred, pa) => {
-  tries(pa->(flatMap(a =>
-        if pred(a) {
-          pure(a)
-        } else {
-          fail("Result did not pass filter predicate")
-        }
-      , _)))
+  tries(pa->flatMap(a =>
+      if pred(a) {
+        pure(a)
+      } else {
+        fail("Result did not pass filter predicate")
+      }
+    , _))
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -820,14 +819,14 @@ let anyDigitAsInt: t<int> = tries(
   anyChar->\">>="(c => {
     c
     ->String.toInt
-    ->(Option.foldLazy(_ => fail("Expected a digit, but found character '" ++ (c ++ "'")), pure, _))
+    ->Option.foldLazy(_ => fail("Expected a digit, but found character '" ++ (c ++ "'")), pure, _)
   }),
 )
 
 @ocaml.doc("
 Matches any digit 0-9 as a string
 ")
-let anyDigit: t<string> = string_of_int->\"<$>"(anyDigitAsInt)
+let anyDigit: t<string> = Int.toString->\"<$>"(anyDigitAsInt)
 
 @ocaml.doc("
 Matches any string (warning: this will likely consume as much input as possible)
@@ -957,8 +956,8 @@ let anyCharInRange: (int, int) => t<string> = (min, max) => {
       } else {
         fail(
           "Expected character in ASCII range " ++
-          (string_of_int(min) ++
-          (" (inclusive) and " ++ (string_of_int(max) ++ " (inclusive)"))),
+          (Int.toString(min) ++
+          (" (inclusive) and " ++ (Int.toString(max) ++ " (inclusive)"))),
         )
       }
     }),
@@ -1025,7 +1024,7 @@ Matches a positive short (0-255)
 let anyUnsignedShort: t<int> = {
   tries(
     anyPositiveInt
-    ->filter(i => i <= 255, _)
+    ->(filter(i => i <= 255, _))
     ->\"<?>"("Expected a positive short (0 - 255)"),
   )
 }
@@ -1070,7 +1069,7 @@ let anyHexDigit: t<string> = \"<?>"(
 Matches any hex digit except \"0\"
  ")
 let anyNonZeroHexDigit: t<string> =
-  anyHexDigit->filter(c => c != "0", _)->\"<?>"("Expected any non-zero hex digit")
+  anyHexDigit->(filter(c => c != "0", _))->\"<?>"("Expected any non-zero hex digit")
 
 @ocaml.doc("
 Matches the given regular expression.
@@ -1100,19 +1099,17 @@ let regex: Js.Re.t => t<string> = regex => Parser(
       let captures: array<Js.nullable<string>> = Js.Re.captures(result)
 
       Array.head(captures)
-      ->Option.flatMap(x => Js.Nullable.toOption(x), _)
-      ->(
-        Option.foldLazy(
-          () => Belt.Result.Error({error: parseError(), pos}),
-          match_ => Belt.Result.Ok({
-            result: match_,
-            suffix: {
-              str,
-              pos: pos + String.length(match_),
-            },
-          }),
-          _,
-        )
+      ->(Option.flatMap(x => Js.Nullable.toOption(x), _))
+      ->Option.foldLazy(
+        () => Belt.Result.Error({error: parseError(), pos}),
+        match_ => Belt.Result.Ok({
+          result: match_,
+          suffix: {
+            str,
+            pos: pos + String.length(match_),
+          },
+        }),
+        _,
       )
     }
   },
@@ -1132,12 +1129,12 @@ Matches a decimal value like 123 or 123.456 or 1.23e-3, returned as a string
 
 TODO: this doesn't handle commas correctly with groups of 3
 ")
-let anyUnsignedDecimalWithLeadingDigits: t<string> = regex(%re("/\d[\d,]*(?:\.\d+)?(?:e-?\d+)?/i"))
+let anyUnsignedDecimalWithLeadingDigits: t<string> = regex(/\d[\d,]*(?:\.\d+)?(?:e-?\d+)?/i)
 
 @ocaml.doc("
 Matches a decimal value like .456 or .23e-3, returned as a string
 ")
-let anyUnsignedDecimalWithoutLeadingDigits: t<string> = regex(%re("/\.\d+(?:e-?\d+)?/i"))
+let anyUnsignedDecimalWithoutLeadingDigits: t<string> = regex(/\.\d+(?:e-?\d+)?/i)
 
 @ocaml.doc("
 Matches a decimal value like 123.456 or 1.23e-3 or .456 or .23e-3, returned as a string
@@ -1158,7 +1155,7 @@ Matches a decimal that starts with an - sign
  ")
 let anyNegativeDecimal: t<string> =
   (str("-"), anyUnsignedDecimal)
-  ->mapTuple2(String.concat, _)
+  ->(mapTuple2(String.concat, _))
   ->\"<?>"("Expected a negative decimal")
 
 @ocaml.doc("

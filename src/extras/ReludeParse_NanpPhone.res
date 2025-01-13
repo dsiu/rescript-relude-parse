@@ -9,9 +9,12 @@ module AreaCode = {
 
   let parser = {
     open Parser
-    (opt(str("(")), filter(v => v != 1, anyDigitAsInt), times2(anyDigitAsInt), opt(str(")")))->(
-      mapTuple4((_, a, (b, c), _) => AreaCode(a, b, c), _)
-    )
+    (
+      opt(str("(")),
+      filter(v => v != 1, anyDigitAsInt),
+      times2(anyDigitAsInt),
+      opt(str(")")),
+    )->mapTuple4((_, a, (b, c), _) => AreaCode(a, b, c), _)
   }
 }
 
@@ -22,7 +25,7 @@ module Exchange = {
   // pattern x11
   let parser = {
     open Parser
-    times3(anyDigitAsInt)->(map(((a, b, c)) => Exchange(a, b, c), _))
+    times3(anyDigitAsInt)->map(((a, b, c)) => Exchange(a, b, c), _)
   }
 }
 
@@ -31,7 +34,7 @@ module Line = {
 
   let parser = {
     open Parser
-    times4(anyDigitAsInt)->(map(((a, b, c, d)) => Line(a, b, c, d), _))
+    times4(anyDigitAsInt)->map(((a, b, c, d)) => Line(a, b, c, d), _)
   }
 }
 
@@ -82,7 +85,7 @@ let parse = str => Parser.runParser(str, parser)
 let parseOption = \">>"(parse, Result.getOk, _)
 
 let unsafeFromString = str =>
-  parse(str)->(Result.fold(e => failwith(ReludeParse_Parser.ParseError.show(e)), id, _))
+  parse(str)->Result.fold(e => failwith(ReludeParse_Parser.ParseError.show(e)), id, _)
 
 type format =
   | Local // 754-3010
@@ -96,67 +99,63 @@ let show = (~format=Domestic, phone: t): string => {
   let (a, b, c, d, e, f, g, h, i, j) = toDigits(phone)
   switch format {
   | Local =>
-    string_of_int(d) ++
-    (string_of_int(e) ++
-    (string_of_int(f) ++
+    Int.toString(d) ++
+    (Int.toString(e) ++
+    (Int.toString(f) ++
     ("-" ++
-    (string_of_int(g) ++ (string_of_int(h) ++ (string_of_int(i) ++ string_of_int(j)))))))
+    (Int.toString(g) ++ (Int.toString(h) ++ (Int.toString(i) ++ Int.toString(j)))))))
 
   | Domestic =>
-    string_of_int(a) ++
-    (string_of_int(b) ++
-    (string_of_int(c) ++
+    Int.toString(a) ++
+    (Int.toString(b) ++
+    (Int.toString(c) ++
     ("-" ++
-    (string_of_int(d) ++
-    (string_of_int(e) ++
-    (string_of_int(f) ++
+    (Int.toString(d) ++
+    (Int.toString(e) ++
+    (Int.toString(f) ++
     ("-" ++
-    (string_of_int(g) ++ (string_of_int(h) ++ (string_of_int(i) ++ string_of_int(j)))))))))))
+    (Int.toString(g) ++ (Int.toString(h) ++ (Int.toString(i) ++ Int.toString(j)))))))))))
 
   | DomesticShort =>
-    string_of_int(a) ++
-    (string_of_int(b) ++
-    (string_of_int(c) ++
-    (string_of_int(d) ++
-    (string_of_int(e) ++
-    (string_of_int(f) ++
-    (string_of_int(g) ++ (string_of_int(h) ++ (string_of_int(i) ++ string_of_int(j)))))))))
+    Int.toString(a) ++
+    (Int.toString(b) ++
+    (Int.toString(c) ++
+    (Int.toString(d) ++
+    (Int.toString(e) ++
+    (Int.toString(f) ++
+    (Int.toString(g) ++ (Int.toString(h) ++ (Int.toString(i) ++ Int.toString(j)))))))))
 
   | DomesticParen =>
     "(" ++
-    (string_of_int(a) ++
-    (string_of_int(b) ++
-    (string_of_int(c) ++
+    (Int.toString(a) ++
+    (Int.toString(b) ++
+    (Int.toString(c) ++
     (") " ++
-    (string_of_int(d) ++
-    (string_of_int(e) ++
-    (string_of_int(f) ++
-    ("-" ++
-    (string_of_int(g) ++
-    (string_of_int(h) ++ (string_of_int(i) ++ string_of_int(j))))))))))))
+    (Int.toString(d) ++
+    (Int.toString(e) ++
+    (Int.toString(f) ++
+    ("-" ++ (Int.toString(g) ++ (Int.toString(h) ++ (Int.toString(i) ++ Int.toString(j))))))))))))
 
   | International =>
     "+1-" ++
-    (string_of_int(a) ++
-    (string_of_int(b) ++
-    (string_of_int(c) ++
+    (Int.toString(a) ++
+    (Int.toString(b) ++
+    (Int.toString(c) ++
     ("-" ++
-    (string_of_int(d) ++
-    (string_of_int(e) ++
-    (string_of_int(f) ++
-    ("-" ++
-    (string_of_int(g) ++
-    (string_of_int(h) ++ (string_of_int(i) ++ string_of_int(j))))))))))))
+    (Int.toString(d) ++
+    (Int.toString(e) ++
+    (Int.toString(f) ++
+    ("-" ++ (Int.toString(g) ++ (Int.toString(h) ++ (Int.toString(i) ++ Int.toString(j))))))))))))
 
   | InternationalShort =>
     "+1" ++
-    (string_of_int(a) ++
-    (string_of_int(b) ++
-    (string_of_int(c) ++
-    (string_of_int(d) ++
-    (string_of_int(e) ++
-    (string_of_int(f) ++
-    (string_of_int(g) ++
-    (string_of_int(h) ++ (string_of_int(i) ++ string_of_int(j))))))))))
+    (Int.toString(a) ++
+    (Int.toString(b) ++
+    (Int.toString(c) ++
+    (Int.toString(d) ++
+    (Int.toString(e) ++
+    (Int.toString(f) ++
+    (Int.toString(g) ++
+    (Int.toString(h) ++ (Int.toString(i) ++ Int.toString(j))))))))))
   }
 }

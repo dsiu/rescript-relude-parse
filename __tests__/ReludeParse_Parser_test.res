@@ -3,6 +3,9 @@ open Expect
 open TestUtils
 open P.Infix
 
+// TODO: shim to make code compatible with ReScript v12. refactor this later
+let int_of_string = s => s->Int.fromString->Option.getUnsafe
+
 describe("ReludeParse_Parser", () => {
   test("runParser success", () =>
     expect(P.runParser("9", P.anyDigit))->toEqual(Belt.Result.Ok("9"))
@@ -15,7 +18,7 @@ describe("ReludeParse_Parser", () => {
 
   test("pure", () => {
     let actual: Belt.Result.t<P.success<int>, P.error> =
-      P.pure(42)->(P.unParser({pos: 0, str: "whatever"}, _))
+      P.pure(42)->P.unParser({pos: 0, str: "whatever"}, _)
     let expected: Belt.Result.t<P.success<int>, P.error> = Ok({
       result: 42,
       suffix: {
@@ -29,7 +32,7 @@ describe("ReludeParse_Parser", () => {
   test("unit", () => testParse(P.unit, "whatever", (), {pos: 0, str: "whatever"}))
 
   test("fail", () => {
-    let actual = P.fail("Fail!")->(P.unParser({pos: 0, str: "whatever"}, _))
+    let actual = P.fail("Fail!")->P.unParser({pos: 0, str: "whatever"}, _)
     let expected: Belt.Result.t<P.success<_>, P.error> = Belt.Result.Error({
       error: ParseError("Fail!"),
       pos: 0,
@@ -72,15 +75,15 @@ describe("ReludeParse_Parser", () => {
 
     let result =
       P.anyDigit
-      ->P.tap(
+      ->(P.tap(
         (result, posStringBefore, posStringAfter) => {
           resultRef := result
           posStringBeforeRef := posStringBefore
           posStringAfterRef := posStringAfter
         },
         _,
-      )
-      ->(P.runParser("1", _))
+      ))
+      ->P.runParser("1", _)
 
     expect((
       resultRef.contents,
@@ -90,7 +93,7 @@ describe("ReludeParse_Parser", () => {
     ))->toEqual(("1", P.PosString.make(0, "1"), P.PosString.make(1, "1"), Belt.Result.Ok("1")))
   })
 
-  test("tapLog", () => expect(P.anyDigit->P.tapLog->P.runParser("1", _)->ignore)->toEqual())
+  test("tapLog", () => expect(P.anyDigit->P.tapLog->(P.runParser("1", _))->ignore)->toEqual())
 
   test("apply/<*>", () =>
     testParse(\"<*>"(P.pure(int_of_string), P.anyDigit), "9", 9, {pos: 1, str: "9"})
@@ -120,7 +123,7 @@ describe("ReludeParse_Parser", () => {
 
   test("mapTupleN (applicative extensions)", () =>
     testParse(
-      (P.anyDigit, P.anyDigit, P.anyDigit)->(P.mapTuple3((a, b, c) => (a, b, c), _)),
+      (P.anyDigit, P.anyDigit, P.anyDigit)->P.mapTuple3((a, b, c) => (a, b, c), _),
       "012",
       ("0", "1", "2"),
       {pos: 3, str: "012"},
@@ -154,7 +157,7 @@ describe("ReludeParse_Parser", () => {
   })
 
   test("throwError", () => {
-    let actual = P.throwError(P.ParseError.make("hi"))->(P.unParser({pos: 0, str: "whatever"}, _))
+    let actual = P.throwError(P.ParseError.make("hi"))->P.unParser({pos: 0, str: "whatever"}, _)
     let expected: Belt.Result.t<P.success<_>, P.error> = Belt.Result.Error({
       error: ParseError("hi"),
       pos: 0,
@@ -164,7 +167,7 @@ describe("ReludeParse_Parser", () => {
 
   test("catchError", () =>
     testParse(
-      \"<?>"(P.anyDigit, "a")->(P.catchError((ParseError(msg)) => P.str(msg), _)),
+      \"<?>"(P.anyDigit, "a")->P.catchError((ParseError(msg)) => P.str(msg), _),
       "a",
       "a",
       {pos: 1, str: "a"},
@@ -375,12 +378,12 @@ describe("ReludeParse_Parser", () => {
   )
 
   test("timesMinMax exact min", () =>
-    testParse(P.anyDigit->(P.timesMinMax(2, 5, _)), "01abc", list{"0", "1"}, {pos: 2, str: "01abc"})
+    testParse(P.anyDigit->P.timesMinMax(2, 5, _), "01abc", list{"0", "1"}, {pos: 2, str: "01abc"})
   )
 
   test("timesMinMax exact max", () =>
     testParse(
-      P.anyDigit->(P.timesMinMax(2, 5, _)),
+      P.anyDigit->P.timesMinMax(2, 5, _),
       "0123abc",
       list{"0", "1", "2", "3"},
       {pos: 4, str: "0123abc"},
@@ -389,7 +392,7 @@ describe("ReludeParse_Parser", () => {
 
   test("timesMinMax over max", () =>
     testParse(
-      P.anyDigit->(P.timesMinMax(2, 5, _)),
+      P.anyDigit->P.timesMinMax(2, 5, _),
       "0123456789",
       list{"0", "1", "2", "3", "4"},
       {pos: 5, str: "0123456789"},
@@ -398,50 +401,45 @@ describe("ReludeParse_Parser", () => {
 
   test("timesMinMax partial", () =>
     testParse(
-      P.anyDigit->(P.timesMinMax(2, 5, _)),
+      P.anyDigit->P.timesMinMax(2, 5, _),
       "012abc",
       list{"0", "1", "2"},
       {pos: 3, str: "012abc"},
     )
   )
 
-  test("timesMinMax failure", () => testParseFail(P.anyDigit->(P.timesMinMax(2, 5, _)), "0abc", 1))
+  test("timesMinMax failure", () => testParseFail(P.anyDigit->P.timesMinMax(2, 5, _), "0abc", 1))
 
   test("timesMin exact min", () =>
-    testParse(P.anyDigit->(P.timesMin(2, _)), "01abc", list{"0", "1"}, {pos: 2, str: "01abc"})
+    testParse(P.anyDigit->P.timesMin(2, _), "01abc", list{"0", "1"}, {pos: 2, str: "01abc"})
   )
 
   test("timesMin full", () =>
     testParse(
-      P.anyDigit->(P.timesMin(2, _)),
+      P.anyDigit->P.timesMin(2, _),
       "01234abc",
       list{"0", "1", "2", "3", "4"},
       {pos: 5, str: "01234abc"},
     )
   )
 
-  test("timesMin fail", () => testParseFail(P.anyDigit->(P.timesMin(2, _)), "0abc", 1))
+  test("timesMin fail", () => testParseFail(P.anyDigit->P.timesMin(2, _), "0abc", 1))
 
   test("timesMax empty", () =>
-    testParse(P.anyDigit->(P.timesMax(3, _)), "", list{}, {pos: 0, str: ""})
+    testParse(P.anyDigit->P.timesMax(3, _), "", list{}, {pos: 0, str: ""})
   )
 
   test("timesMax partial", () =>
-    testParse(P.anyDigit->(P.timesMax(3, _)), "01abc", list{"0", "1"}, {pos: 2, str: "01abc"})
+    testParse(P.anyDigit->P.timesMax(3, _), "01abc", list{"0", "1"}, {pos: 2, str: "01abc"})
   )
 
   test("timesMax exact max", () =>
-    testParse(
-      P.anyDigit->(P.timesMax(3, _)),
-      "012abc",
-      list{"0", "1", "2"},
-      {pos: 3, str: "012abc"},
-    )
+    testParse(P.anyDigit->P.timesMax(3, _), "012abc", list{"0", "1", "2"}, {pos: 3, str: "012abc"})
   )
 
   test("timesMax over max", () =>
     testParse(
-      P.anyDigit->(P.timesMax(3, _)),
+      P.anyDigit->P.timesMax(3, _),
       "01234abc",
       list{"0", "1", "2"},
       {pos: 3, str: "01234abc"},
@@ -480,11 +478,11 @@ describe("ReludeParse_Parser", () => {
   )
 
   test("orDefault success", () =>
-    testParse(P.anyDigit->(P.orDefault("!", _)), "9", "9", {pos: 1, str: "9"})
+    testParse(P.anyDigit->P.orDefault("!", _), "9", "9", {pos: 1, str: "9"})
   )
 
   test("orDefault default", () =>
-    testParse(P.anyDigit->(P.orDefault("!", _)), "x", "!", {pos: 0, str: "x"})
+    testParse(P.anyDigit->P.orDefault("!", _), "x", "!", {pos: 0, str: "x"})
   ) // TODO: not sure if pos should be advanced here?
 
   test("orUnit hit", () => testParse(P.anyDigit->P.orUnit, "3", (), {pos: 1, str: "3"}))
@@ -496,34 +494,34 @@ describe("ReludeParse_Parser", () => {
   test("opt miss", () => testParse(P.anyDigit->P.opt, "a", None, {pos: 0, str: "a"}))
 
   test("sepBy empty", () =>
-    testParse(P.anyDigit->(P.sepBy(P.str(","), _)), "", list{}, {pos: 0, str: ""})
+    testParse(P.anyDigit->P.sepBy(P.str(","), _), "", list{}, {pos: 0, str: ""})
   )
 
   test("sepBy no trailing", () =>
     testParse(
-      P.anyDigit->(P.sepBy(P.str(","), _)),
+      P.anyDigit->P.sepBy(P.str(","), _),
       "1,2,3",
       list{"1", "2", "3"},
       {pos: 5, str: "1,2,3"},
     )
   )
 
-  test("sepBy trailing", () => testParseFail(P.anyDigit->(P.sepBy(P.str(","), _)), "1,2,3,", 6))
+  test("sepBy trailing", () => testParseFail(P.anyDigit->P.sepBy(P.str(","), _), "1,2,3,", 6))
 
   test("sepBy1 no trailing", () =>
     testParse(
-      P.anyDigit->(P.sepBy1(P.str(","), _)),
+      P.anyDigit->P.sepBy1(P.str(","), _),
       "1,2,3",
       Relude.Nel.make("1", list{"2", "3"}),
       {pos: 5, str: "1,2,3"},
     )
   )
 
-  test("sepBy1 trailing", () => testParseFail(P.anyDigit->(P.sepBy1(P.str(","), _)), "1,2,3,", 6))
+  test("sepBy1 trailing", () => testParseFail(P.anyDigit->P.sepBy1(P.str(","), _), "1,2,3,", 6))
 
   test("sepByOptEnd no trailing", () =>
     testParse(
-      P.anyDigit->(P.sepByOptEnd(P.str(","), _)),
+      P.anyDigit->P.sepByOptEnd(P.str(","), _),
       "1,2,3",
       list{"1", "2", "3"},
       {pos: 5, str: "1,2,3"},
@@ -532,7 +530,7 @@ describe("ReludeParse_Parser", () => {
 
   test("sepByOptEnd trailing", () =>
     testParse(
-      P.anyDigit->(P.sepByOptEnd(P.str(","), _)),
+      P.anyDigit->P.sepByOptEnd(P.str(","), _),
       "1,2,3,",
       list{"1", "2", "3"},
       {pos: 6, str: "1,2,3,"},
@@ -541,7 +539,7 @@ describe("ReludeParse_Parser", () => {
 
   test("sepByOptEnd1 no trailing", () =>
     testParse(
-      P.anyDigit->(P.sepByOptEnd1(P.str(","), _)),
+      P.anyDigit->P.sepByOptEnd1(P.str(","), _),
       "1,2,3",
       Relude.Nel.make("1", list{"2", "3"}),
       {pos: 5, str: "1,2,3"},
@@ -550,7 +548,7 @@ describe("ReludeParse_Parser", () => {
 
   test("sepByOptEnd1 trailing", () =>
     testParse(
-      P.anyDigit->(P.sepByOptEnd1(P.str(","), _)),
+      P.anyDigit->P.sepByOptEnd1(P.str(","), _),
       "1,2,3,",
       Relude.Nel.make("1", list{"2", "3"}),
       {pos: 6, str: "1,2,3,"},
@@ -558,12 +556,12 @@ describe("ReludeParse_Parser", () => {
   )
 
   test("sepByWithEnd no trailing", () =>
-    testParseFail(P.anyDigit->(P.sepByWithEnd(P.str(","), _)), "1,2,3", 5)
+    testParseFail(P.anyDigit->P.sepByWithEnd(P.str(","), _), "1,2,3", 5)
   )
 
   test("sepByWithEnd trailing", () =>
     testParse(
-      P.anyDigit->(P.sepByWithEnd(P.str(","), _)),
+      P.anyDigit->P.sepByWithEnd(P.str(","), _),
       "1,2,3,",
       list{"1", "2", "3"},
       {pos: 6, str: "1,2,3,"},
@@ -571,12 +569,12 @@ describe("ReludeParse_Parser", () => {
   )
 
   test("sepByWithEnd1 no trailing", () =>
-    testParseFail(P.anyDigit->(P.sepByWithEnd1(P.str(","), _)), "1,2,3", 5)
+    testParseFail(P.anyDigit->P.sepByWithEnd1(P.str(","), _), "1,2,3", 5)
   )
 
   test("sepByWithEnd1 trailing", () =>
     testParse(
-      P.anyDigit->(P.sepByWithEnd1(P.str(","), _)),
+      P.anyDigit->P.sepByWithEnd1(P.str(","), _),
       "1,2,3,",
       Relude.Nel.make("1", list{"2", "3"}),
       {pos: 6, str: "1,2,3,"},
@@ -667,7 +665,7 @@ describe("ReludeParse_Parser", () => {
 
   test("manyUntilWithEnd full success", () =>
     testParse(
-      P.anyDigit->(P.manyUntilWithEnd(P.str("!"), _)),
+      P.anyDigit->P.manyUntilWithEnd(P.str("!"), _),
       "123!",
       (list{"1", "2", "3"}, "!"),
       {pos: 4, str: "123!"},
@@ -675,23 +673,18 @@ describe("ReludeParse_Parser", () => {
   )
 
   test("manyUntilWithEnd empty success", () =>
-    testParse(
-      P.anyDigit->(P.manyUntilWithEnd(P.str("!"), _)),
-      "!",
-      (list{}, "!"),
-      {pos: 1, str: "!"},
-    )
+    testParse(P.anyDigit->P.manyUntilWithEnd(P.str("!"), _), "!", (list{}, "!"), {pos: 1, str: "!"})
   )
 
   test("manyUntilWithEnd failure", () =>
-    testParseFail(P.anyDigit->(P.manyUntilWithEnd(P.str("!"), _)), "123", 3)
+    testParseFail(P.anyDigit->P.manyUntilWithEnd(P.str("!"), _), "123", 3)
   )
 
   // many1UntilWithEnd
 
   test("many1UntilWithEnd full success", () =>
     testParse(
-      P.anyDigit->(P.many1UntilWithEnd(P.str("!"), _)),
+      P.anyDigit->P.many1UntilWithEnd(P.str("!"), _),
       "123!",
       (Relude.Nel.make("1", list{"2", "3"}), "!"),
       {pos: 4, str: "123!"},
@@ -699,18 +692,18 @@ describe("ReludeParse_Parser", () => {
   )
 
   test("many1UntilWithEnd empty failure", () =>
-    testParseFail(P.anyDigit->(P.many1UntilWithEnd(P.str("!"), _)), "!", 0)
+    testParseFail(P.anyDigit->P.many1UntilWithEnd(P.str("!"), _), "!", 0)
   )
 
   test("many1UntilWithEnd failure", () =>
-    testParseFail(P.anyDigit->(P.many1UntilWithEnd(P.str("!"), _)), "123", 3)
+    testParseFail(P.anyDigit->P.many1UntilWithEnd(P.str("!"), _), "123", 3)
   )
 
   // manyUntil
 
   test("manyUntil full success", () =>
     testParse(
-      P.anyDigit->(P.manyUntil(P.str("!"), _)),
+      P.anyDigit->P.manyUntil(P.str("!"), _),
       "123!",
       list{"1", "2", "3"},
       {pos: 4, str: "123!"},
@@ -718,16 +711,16 @@ describe("ReludeParse_Parser", () => {
   )
 
   test("manyUntil empty success", () =>
-    testParse(P.anyDigit->(P.manyUntil(P.str("!"), _)), "!", list{}, {pos: 1, str: "!"})
+    testParse(P.anyDigit->P.manyUntil(P.str("!"), _), "!", list{}, {pos: 1, str: "!"})
   )
 
-  test("manyUntil failure", () => testParseFail(P.anyDigit->(P.manyUntil(P.str("!"), _)), "123", 3))
+  test("manyUntil failure", () => testParseFail(P.anyDigit->P.manyUntil(P.str("!"), _), "123", 3))
 
   // many1Until
 
   test("many1Until full success", () =>
     testParse(
-      P.anyDigit->(P.many1Until(P.str("!"), _)),
+      P.anyDigit->P.many1Until(P.str("!"), _),
       "123!",
       Relude.Nel.make("1", list{"2", "3"}),
       {pos: 4, str: "123!"},
@@ -735,18 +728,16 @@ describe("ReludeParse_Parser", () => {
   )
 
   test("many1Until empty failure", () =>
-    testParseFail(P.anyDigit->(P.many1Until(P.str("!"), _)), "!", 0)
+    testParseFail(P.anyDigit->P.many1Until(P.str("!"), _), "!", 0)
   )
 
-  test("many1Until failure", () =>
-    testParseFail(P.anyDigit->(P.many1Until(P.str("!"), _)), "123", 3)
-  )
+  test("many1Until failure", () => testParseFail(P.anyDigit->P.many1Until(P.str("!"), _), "123", 3))
 
   // manyUntilPeekWithEnd
 
   test("manyUntilPeekWithEnd full success", () =>
     testParse(
-      P.anyDigit->(P.manyUntilPeekWithEnd(P.str("!"), _)),
+      P.anyDigit->P.manyUntilPeekWithEnd(P.str("!"), _),
       "123!",
       (list{"1", "2", "3"}, "!"),
       {pos: 3, str: "123!"},
@@ -755,7 +746,7 @@ describe("ReludeParse_Parser", () => {
 
   test("manyUntilPeekWithEnd empty success", () =>
     testParse(
-      P.anyDigit->(P.manyUntilPeekWithEnd(P.str("!"), _)),
+      P.anyDigit->P.manyUntilPeekWithEnd(P.str("!"), _),
       "!",
       (list{}, "!"),
       {pos: 0, str: "!"},
@@ -763,14 +754,14 @@ describe("ReludeParse_Parser", () => {
   )
 
   test("manyUntilPeekWithEnd failure", () =>
-    testParseFail(P.anyDigit->(P.manyUntilPeekWithEnd(P.str("!"), _)), "123", 3)
+    testParseFail(P.anyDigit->P.manyUntilPeekWithEnd(P.str("!"), _), "123", 3)
   )
 
   // many1UntilPeekWithEnd
 
   test("many1UntilPeekWithEnd full success", () =>
     testParse(
-      P.anyDigit->(P.many1UntilPeekWithEnd(P.str("!"), _)),
+      P.anyDigit->P.many1UntilPeekWithEnd(P.str("!"), _),
       "123!",
       (Relude.Nel.make("1", list{"2", "3"}), "!"),
       {pos: 3, str: "123!"},
@@ -778,18 +769,18 @@ describe("ReludeParse_Parser", () => {
   )
 
   test("many1UntilPeekWithEnd empty failure", () =>
-    testParseFail(P.anyDigit->(P.many1UntilPeekWithEnd(P.str("!"), _)), "!", 0)
+    testParseFail(P.anyDigit->P.many1UntilPeekWithEnd(P.str("!"), _), "!", 0)
   )
 
   test("many1UntilPeekWithEnd failure", () =>
-    testParseFail(P.anyDigit->(P.many1UntilPeekWithEnd(P.str("!"), _)), "123", 3)
+    testParseFail(P.anyDigit->P.many1UntilPeekWithEnd(P.str("!"), _), "123", 3)
   )
 
   // manyUntilPeek
 
   test("manyUntilPeek full success", () =>
     testParse(
-      P.anyDigit->(P.manyUntilPeek(P.str("!"), _)),
+      P.anyDigit->P.manyUntilPeek(P.str("!"), _),
       "123!",
       list{"1", "2", "3"},
       {pos: 3, str: "123!"},
@@ -797,18 +788,18 @@ describe("ReludeParse_Parser", () => {
   )
 
   test("manyUntilPeek empty success", () =>
-    testParse(P.anyDigit->(P.manyUntilPeek(P.str("!"), _)), "!", list{}, {pos: 0, str: "!"})
+    testParse(P.anyDigit->P.manyUntilPeek(P.str("!"), _), "!", list{}, {pos: 0, str: "!"})
   )
 
   test("manyUntilPeek failure", () =>
-    testParseFail(P.anyDigit->(P.manyUntilPeek(P.str("!"), _)), "123", 3)
+    testParseFail(P.anyDigit->P.manyUntilPeek(P.str("!"), _), "123", 3)
   )
 
   // many1UntilPeek
 
   test("many1UntilPeek full success", () =>
     testParse(
-      P.anyDigit->(P.many1UntilPeek(P.str("!"), _)),
+      P.anyDigit->P.many1UntilPeek(P.str("!"), _),
       "123!",
       Relude.Nel.make("1", list{"2", "3"}),
       {pos: 3, str: "123!"},
@@ -816,18 +807,18 @@ describe("ReludeParse_Parser", () => {
   )
 
   test("many1UntilPeek empty failure", () =>
-    testParseFail(P.anyDigit->(P.many1UntilPeek(P.str("!"), _)), "!", 0)
+    testParseFail(P.anyDigit->P.many1UntilPeek(P.str("!"), _), "!", 0)
   )
 
   test("many1UntilPeek failure", () =>
-    testParseFail(P.anyDigit->(P.many1UntilPeek(P.str("!"), _)), "123", 3)
+    testParseFail(P.anyDigit->P.many1UntilPeek(P.str("!"), _), "123", 3)
   )
 
   // filter
 
   test("filter success", () =>
     testParse(
-      \"<?>"(P.anyInt->(P.filter(i => i <= 255, _)), "Expected an int less than 255"),
+      \"<?>"(P.anyInt->P.filter(i => i <= 255, _), "Expected an int less than 255"),
       "255",
       255,
       {pos: 3, str: "255"},
@@ -836,7 +827,7 @@ describe("ReludeParse_Parser", () => {
 
   test("filter failure", () =>
     testParseFailWithMessage(
-      \"<?>"(P.anyInt->(P.filter(i => i <= 255, _)), "Expected an int less than 255"),
+      \"<?>"(P.anyInt->P.filter(i => i <= 255, _), "Expected an int less than 255"),
       "256",
       0,
       "Expected an int less than 255",
@@ -1202,7 +1193,7 @@ describe("ReludeParse_Parser", () => {
       (a => b => a + b)
       ->\"<$>"(P.ws->\"*>"(P.anyDigitAsInt))
       ->\"<*>"(P.anyDigitAsInt)
-      ->(P.runParser("   34", _))
+      ->P.runParser("   34", _)
     expect(x)->toEqual(Belt.Result.Ok(7))
   })
 
@@ -1290,20 +1281,20 @@ describe("ReludeParse_Parser", () => {
   testAll(
     "regex various successful",
     list{
-      ("aaab", %re("/a+/"), "aaa", 3),
-      ("aaab", %re("/a{1,2}/"), "aa", 2),
-      ("aaabbb", %re("/a+b+/"), "aaabbb", 6),
-      ("aaabbb", %re("/a+b+c*/"), "aaabbb", 6),
-      ("aaabbbccc", %re("/a+b+c*/"), "aaabbbccc", 9),
-      ("aaabbbcccd", %re("/a+b+c*/"), "aaabbbccc", 9),
-      ("aAAbBBcCCd", %re("/a+b+c*/i"), "aAAbBBcCC", 9),
+      ("aaab", /a+/, "aaa", 3),
+      ("aaab", /a{1,2}/, "aa", 2),
+      ("aaabbb", /a+b+/, "aaabbb", 6),
+      ("aaabbb", /a+b+c*/, "aaabbb", 6),
+      ("aaabbbccc", /a+b+c*/, "aaabbbccc", 9),
+      ("aaabbbcccd", /a+b+c*/, "aaabbbccc", 9),
+      ("aAAbBBcCCd", /a+b+c*/i, "aAAbBBcCC", 9),
     },
     ((str, regex, expected, pos)) => testParse(P.regex(regex), str, expected, {pos, str}),
   )
 
   test("regex mid-parse", () =>
     testParse(
-      \"*>"(P.many1(P.anyDigit), P.regex(%re("/a+b/i"))),
+      \"*>"(P.many1(P.anyDigit), P.regex(/a+b/i)),
       "123aAab456",
       "aAab",
       {pos: 7, str: "123aAab456"},
@@ -1312,14 +1303,14 @@ describe("ReludeParse_Parser", () => {
 
   test("regex mid-parse with eof", () =>
     testParse(
-      \"<*"(\"<*"(\"*>"(P.many1(P.anyDigit), P.regex(%re("/a+b/i"))), P.many(P.anyDigit)), P.eof),
+      \"<*"(\"<*"(\"*>"(P.many1(P.anyDigit), P.regex(/a+b/i)), P.many(P.anyDigit)), P.eof),
       "123aAab456",
       "aAab",
       {pos: 10, str: "123aAab456"},
     )
   )
 
-  testAll("regex fail", list{("aaab", %re("/b/"), 0), ("", %re("/a/"), 0)}, ((input, regex, pos)) =>
+  testAll("regex fail", list{("aaab", /b/, 0), ("", /a/, 0)}, ((input, regex, pos)) =>
     testParseFail(P.regex(regex), input, pos)
   )
 
@@ -1401,7 +1392,7 @@ describe("ReludeParse_Parser", () => {
 
   test("eol sepBy", () =>
     testParse(
-      P.anyInt->(P.sepBy(P.eol, _)),
+      P.anyInt->P.sepBy(P.eol, _),
       "123\r\n456\r\n789",
       list{123, 456, 789},
       {pos: 13, str: "123\r\n456\r\n789"},
