@@ -13,6 +13,8 @@ npm-debug.log
 .bsb.lock
 /lib/bs/
 *.bs.js
+/src/**/*.mjs
+/__tests__/**/*.mjs
 
 # Project
 /docs/coverage

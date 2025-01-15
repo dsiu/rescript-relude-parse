@@ -3,6 +3,7 @@
   "version": "0.8.0",
   "description": "Monadic parsing with Relude",
   "main": "index.js",
+  "tpye": "module",
   "scripts": {
     "clean": "rescript clean",
     "build": "rescript build",
@@ -25,13 +26,17 @@
   "homepage": "https://github.com/reazen/relude-parse#readme",
   "devDependencies": {
     "@glennsl/rescript-jest": "github:dsiu/rescript-jest#rescript-v12",
+    "@swc/core": "^1.10.4",
+    "@swc/jest": "^0.2.37",
     "bs-bastet": "github:dsiu/rescript-bastet#rescript-v12",
     "relude": "github:dsiu/rescript-relude#rescript-v12",
     "rescript": "^12.0.0-alpha.7"
   },
   "jest": {
-    "testRunner": "jest-jasmine2",
     "verbose": false,
+    "testMatch": [
+      "**/__tests__/*_test.mjs"
+    ],
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/testUtils/"
@@ -39,6 +44,17 @@
     "coveragePathIgnorePatterns": [
       "/node_modules/",
       "/testUtils/"
+    ],
+    "transform": {
+      "^.+\\.m?jsx?$": "@swc/jest"
+    },
+    "transformIgnorePatterns": [
+      "<rootDir>/node_modules/(?!(rescript|@rescript/core|@glennsl/rescript-jest|relude|bs-bastet)/)"
+    ],
+    "moduleFileExtensions": [
+      "js",
+      "jsx",
+      "mjs"
     ]
   },
   "packageManager": "yarn@4.6.0"
