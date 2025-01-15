@@ -12,6 +12,7 @@ npm-debug.log
 .merlin
 .bsb.lock
 /lib/bs/
+/lib/ocaml/
 *.bs.js
 /src/**/*.mjs
 /__tests__/**/*.mjs
