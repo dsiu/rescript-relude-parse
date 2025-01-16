@@ -1,5 +1,5 @@
 {
-  "name": "relude-parse",
+  "name": "rescript-relude-parse",
   "sources": [
     {
       "dir": "src",
@@ -18,8 +18,8 @@
   "suffix": ".mjs",
   "namespace": false,
   "bs-dependencies": [
-    "bs-bastet",
-    "relude"
+    "rescript-bastet",
+    "rescript-relude"
   ],
   "bs-dev-dependencies": [
     "@glennsl/rescript-jest"
