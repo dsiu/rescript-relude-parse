@@ -24,6 +24,11 @@
     "url": "https://github.com/reazen/relude-parse/issues"
   },
   "homepage": "https://github.com/reazen/relude-parse#readme",
+  "peerDependencies": {
+    "rescript": "^12.0.0-alpha.7",
+    "rescript-bastet": "*",
+    "rescript-relude": "*"
+  },
   "devDependencies": {
     "@glennsl/rescript-jest": "github:dsiu/rescript-jest#rescript-v12",
     "@swc/core": "^1.10.4",
