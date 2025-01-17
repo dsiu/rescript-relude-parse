@@ -40,7 +40,7 @@
   "jest": {
     "verbose": false,
     "testMatch": [
-      "**/__tests__/*_test.mjs"
+      "**/__tests__/*_test.res.mjs"
     ],
     "testPathIgnorePatterns": [
       "/node_modules/",
