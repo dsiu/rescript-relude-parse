@@ -3,11 +3,11 @@
 
 open Jest
 open Expect
-open Relude.Globals
+open! Relude.Globals
 module NanpPhone = ReludeParse.NanpPhone
 
 describe("NanpPhone", () => {
-  let parse = str => NanpPhone.parse(str)->(Result.map(NanpPhone.toDigits, _))
+  let parse = str => NanpPhone.parse(str)->Result.map(NanpPhone.toDigits, _)
   let tuple3334445555 = (3, 3, 3, 4, 4, 4, 5, 5, 5, 5)
 
   test("xxx-yyy-zzzz (separated by hyphens, succeeds)", () =>

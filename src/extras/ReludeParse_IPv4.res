@@ -1,7 +1,7 @@
 @@uncurried
 @@uncurried.swap
 
-open Relude.Globals
+open! Relude.Globals
 module Parser = ReludeParse_Parser
 
 type t = IPv4(int, int, int, int)
@@ -10,7 +10,7 @@ let show: t => string = (IPv4(a, b, c, d)) =>
   {
     open Int
     list{show(a), show(b), show(c), show(d)}
-  }->(List.String.joinWith(".", _))
+  }->List.String.joinWith(".", _)
 
 let toTuple: t => (int, int, int, int) = (IPv4(a, b, c, d)) => (a, b, c, d)
 

@@ -2,7 +2,7 @@
 @@uncurried.swap
 
 open BsBastet.Interface
-open Relude.Globals
+open! Relude.Globals
 
 // TODO: shim to make code compatible with ReScript v12. refactor this later
 let int_of_string = s => s->Int.fromString->Option.getOrThrow

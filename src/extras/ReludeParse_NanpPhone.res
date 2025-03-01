@@ -1,7 +1,7 @@
 @@uncurried
 @@uncurried.swap
 
-open Relude.Globals
+open! Relude.Globals
 module Parser = ReludeParse_Parser
 
 module AreaCode = {

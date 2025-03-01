@@ -1,7 +1,7 @@
 @@uncurried
 @@uncurried.swap
 
-open Relude.Globals
+open! Relude.Globals
 module P = ReludeParse_Parser
 open P
 
