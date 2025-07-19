@@ -19,10 +19,10 @@
   "namespace": false,
   "bs-dependencies": [
     "rescript-bastet",
-    "rescript-relude"
+    "rescript-relude",
+    "@glennsl/rescript-jest"
   ],
   "bs-dev-dependencies": [
-    "@glennsl/rescript-jest"
   ],
   "warnings": {
     "number": "+A-9-40-42",
