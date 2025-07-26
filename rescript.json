@@ -17,12 +17,12 @@
   },
   "suffix": ".res.mjs",
   "namespace": false,
-  "bs-dependencies": [
+  "dependencies": [
     "rescript-bastet",
     "rescript-relude",
     "@glennsl/rescript-jest"
   ],
-  "bs-dev-dependencies": [
+  "dev-dependencies": [
   ],
   "warnings": {
     "number": "+A-9-40-42",
