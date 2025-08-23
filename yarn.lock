@@ -3107,11 +3107,11 @@ __metadata:
     "@swc/core": "npm:^1.10.4"
     "@swc/jest": "npm:^0.2.37"
     jest: "npm:^29.7.0"
-    rescript: "npm:^12.0.0-beta.6"
+    rescript: "npm:^12.0.0-beta.7"
     rescript-bastet: "github:dsiu/rescript-bastet#rescript-v12"
     rescript-relude: "github:dsiu/rescript-relude#rescript-v12"
   peerDependencies:
-    rescript: ^12.0.0-beta.6
+    rescript: ^12.0.0-beta.7
     rescript-bastet: "*"
     rescript-relude: "*"
   languageName: unknown
@@ -3129,7 +3129,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"rescript@npm:^12.0.0-beta.6":
+"rescript@npm:^12.0.0-beta.7":
   version: 12.0.0-beta.7
   resolution: "rescript@npm:12.0.0-beta.7"
   dependencies:
