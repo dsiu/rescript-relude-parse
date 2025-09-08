@@ -11,6 +11,8 @@ npm-debug.log
 # OCaml/BuckleScript/ReasonML
 .merlin
 .bsb.lock
+rescript.lock
+
 /lib/bs/
 /lib/ocaml/
 *.bs.js
