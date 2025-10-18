@@ -1,6 +1,7 @@
 @@uncurried
 @@uncurried.swap
 
+module CoreInt = Int
 open! Relude.Globals
 module P = ReludeParse_Parser
 open P
@@ -23,7 +24,7 @@ let show: t => string = x =>
   | IPv6(0, 0, 0, 0, 0, 0, 0, 1) => "::1"
   | IPv6(a, b, c, d, e, f, g, h) =>
     list{a, b, c, d, e, f, g, h}
-    ->(List.map(x => Js.Int.toStringWithRadix(~radix=16, x), _))
+    ->(List.map(x => CoreInt.toString(x, ~radix=16,), _))
     ->List.String.joinWith(":", _)
   }
 

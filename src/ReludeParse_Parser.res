@@ -119,7 +119,7 @@ E.g. `many1(anyDigit) |> tapLog`
 let tapLog: t<'a> => t<'a> = pa =>
   pa->tap(
     (result, posStringBefore, posStringAfter) =>
-      Js.log3(
+      Console.log3(
         "ReludeParse log: input \"" ++
         (posStringBefore.str ++
         ("\" at pos " ++ (Int.toString(posStringBefore.pos) ++ " had result: "))),
@@ -1077,29 +1077,28 @@ Matches the given regular expression.
 Note: the regex will be prefixed with a ^ if one is not present to ensure a match at the current parse position,
 and not later in the input.
 ")
-let regex: Js.Re.t => t<string> = regex => Parser(
+let regex: RegExp.t => t<string> = regex => Parser(
   ({pos, str}) => {
     // Get the string value of the regex, and make sure it starts with ^ so we only match the next parse position, and not later in the input
-    let flags = Js.Re.flags(regex)
-    let source = Js.Re.source(regex)
+    let flags = RegExp.flags(regex)
+    let source = RegExp.source(regex)
     let caretSource = if String.startsWith(~search="^", source) {
       source
     } else {
       "^" ++ source
     }
-    let regexFinal = Js.Re.fromStringWithFlags(caretSource, ~flags)
+    let regexFinal = RegExp.fromString(caretSource, ~flags)
     let input = String.sliceToEnd(pos, str)
-    let resultOpt = Js.Re.exec_(regexFinal, input)
+    let resultOpt = RegExp.exec(regexFinal, input)
     let parseError = () => ParseError.ParseError(
       "Expected match for regex " ++ (caretSource ++ (" with flags " ++ flags)),
     )
     switch resultOpt {
     | None => Error({error: parseError(), pos})
     | Some(result) =>
-      let captures: array<Js.nullable<string>> = Js.Re.captures(result)
 
-      Array.head(captures)
-      ->(Option.flatMap(x => Js.Nullable.toOption(x), _))
+      Array.head(result)
+      ->(Option.flatMap(x => x, _))
       ->Option.foldLazy(
         () => Belt.Result.Error({error: parseError(), pos}),
         match_ => Belt.Result.Ok({
@@ -1122,7 +1121,7 @@ Note: the regex will be prefixed with a ^ if one is not present to ensure a matc
 and not later in the input.
 ")
 let regexStr = (~flags: string="", regexString: string): t<string> =>
-  regex(Js.Re.fromStringWithFlags(regexString, ~flags))
+  regex(RegExp.fromString(regexString, ~flags))
 
 @ocaml.doc("
 Matches a decimal value like 123 or 123.456 or 1.23e-3, returned as a string
