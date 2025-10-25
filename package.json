@@ -24,16 +24,17 @@
   },
   "homepage": "https://github.com/reazen/relude-parse#readme",
   "peerDependencies": {
-    "rescript": "12.0.0-rc.2",
+    "rescript": "12.0.0-rc.3",
     "rescript-bastet": "*",
     "rescript-relude": "*"
   },
   "devDependencies": {
+    "@babel/core": "^7.28.5",
+    "@babel/preset-env": "^7.28.5",
     "@glennsl/rescript-jest": "github:dsiu/rescript-jest#rescript-v12",
-    "@swc/core": "^1.10.4",
-    "@swc/jest": "^0.2.37",
+    "babel-jest": "^27.3.1",
     "jest": "^27.3.1",
-    "rescript": "12.0.0-rc.2",
+    "rescript": "12.0.0-rc.3",
     "rescript-bastet": "github:dsiu/rescript-bastet#rescript-v12",
     "rescript-relude": "github:dsiu/rescript-relude#rescript-v12"
   },
@@ -51,7 +52,22 @@
       "/testUtils/"
     ],
     "transform": {
-      "^.+\\.m?jsx?$": "@swc/jest"
+      "^.+\\.m?jsx?$": [
+        "babel-jest",
+        {
+          "presets": [
+            [
+              "@babel/preset-env",
+              {
+                "targets": {
+                  "node": "current"
+                },
+                "modules": "commonjs"
+              }
+            ]
+          ]
+        }
+      ]
     },
     "transformIgnorePatterns": [
       "<rootDir>/node_modules/(?!(rescript|@rescript/runtime|@glennsl/rescript-jest|rescript-relude|rescript-bastet)/)"
