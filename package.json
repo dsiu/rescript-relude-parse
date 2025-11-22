@@ -4,9 +4,9 @@
   "description": "Monadic parsing with Relude",
   "tpye": "module",
   "scripts": {
-    "clean": "rescript clean --dev",
-    "build": "rescript build --dev",
-    "watch": "rescript watch --dev",
+    "clean": "rescript clean",
+    "build": "rescript build",
+    "watch": "rescript watch",
     "test": "jest",
     "coverage": "jest --coverage --coverage-reporters=lcov --coverage-reporters=text --coverage-directory ./docs/coverage",
     "cleanbuild": "yarn run clean && yarn run build",
@@ -24,7 +24,7 @@
   },
   "homepage": "https://github.com/reazen/relude-parse#readme",
   "peerDependencies": {
-    "rescript": "12.0.0-rc.3",
+    "rescript": "12.0.0-rc.5",
     "rescript-bastet": "*",
     "rescript-relude": "*"
   },
@@ -34,7 +34,7 @@
     "@glennsl/rescript-jest": "github:dsiu/rescript-jest#rescript-v12",
     "babel-jest": "^27.3.1",
     "jest": "^27.3.1",
-    "rescript": "12.0.0-rc.3",
+    "rescript": "12.0.0-rc.5",
     "rescript-bastet": "github:dsiu/rescript-bastet#rescript-v12",
     "rescript-relude": "github:dsiu/rescript-relude#rescript-v12"
   },
@@ -78,5 +78,5 @@
       "mjs"
     ]
   },
-  "packageManager": "yarn@4.10.3"
+  "packageManager": "yarn@4.11.0"
 }
