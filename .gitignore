@@ -21,3 +21,4 @@ rescript.lock
 
 # Project
 /docs/coverage
+/.yarn/install-state.gz
