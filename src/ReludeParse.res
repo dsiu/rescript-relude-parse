@@ -1,6 +1,3 @@
-@@uncurried
-@@uncurried.swap
-
 // Core parser
 module Parser = ReludeParse_Parser
 

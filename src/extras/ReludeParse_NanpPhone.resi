@@ -1,6 +1,3 @@
-@@uncurried
-@@uncurried.swap
-
 module AreaCode: {
   @ocaml.doc("
    * An area code is the first 3 digits after the country code.
@@ -56,7 +53,7 @@ let parser: ReludeParse_Parser.t<t>
  * Attempt to produce a valid phone number from a given string, possibly failing
  * with a ParseError.
  ")
-let parse: string => Belt.Result.t<t, ReludeParse_Parser.ParseError.t>
+let parse: string => Result.t<t, ReludeParse_Parser.ParseError.t>
 
 @ocaml.doc("
  * Attempt to produce a valid phone number from a given string, discarding the

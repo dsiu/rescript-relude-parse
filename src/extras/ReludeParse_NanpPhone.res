@@ -1,6 +1,3 @@
-@@uncurried
-@@uncurried.swap
-
 open! Relude.Globals
 module Parser = ReludeParse_Parser
 

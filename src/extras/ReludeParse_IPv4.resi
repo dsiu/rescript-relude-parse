@@ -1,6 +1,3 @@
-@@uncurried
-@@uncurried.swap
-
 @ocaml.doc("
  * IPv4 represents an address that matches the pattern `127.0.0.1`. The four
  * ints have to be positive, in the range 0...255, and they are separated by a
@@ -28,7 +25,7 @@ let parser: ReludeParse_Parser.t<t>
  * Attempt to parse a given `string` into an `IPv4.t`, possibly failing with a
  * ParseError.
  ")
-let parse: string => Belt.Result.t<t, ReludeParse_Parser.ParseError.t>
+let parse: string => Result.t<t, ReludeParse_Parser.ParseError.t>
 
 @ocaml.doc("
  * Attempt to parse a given `string`, discarding the ParseError and returning a

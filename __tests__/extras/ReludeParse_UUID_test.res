@@ -1,6 +1,3 @@
-@@uncurried
-@@uncurried.swap
-
 open Jest
 open Expect
 open TestUtils
@@ -35,7 +32,7 @@ describe("ReludeParse_UUID", () => {
 
   test("parse/show round trip", () => {
     let uuid = "01234567-89ab-cdef-aaaa-0000aaaaffff"
-    expect(UUID.parse(uuid)->(Relude.Result.map(UUID.show, _)))->toEqual(Relude.Result.ok(uuid))
+    expect(UUID.parse(uuid)->Relude.Result.map(UUID.show, _))->toEqual(Relude.Result.ok(uuid))
   })
 
   testAll(

@@ -1,6 +1,3 @@
-@@uncurried
-@@uncurried.swap
-
 @ocaml.doc("
  * A type representing v6 of the IP address standard.
  ")
@@ -27,7 +24,7 @@ let parser: ReludeParse_Parser.t<t>
  * Attempt to parse a given `string` into an `IPv6.t`, possibly failing with a
  * ParseError.
  ")
-let parse: string => Belt.Result.t<t, ReludeParse_Parser.ParseError.t>
+let parse: string => Result.t<t, ReludeParse_Parser.ParseError.t>
 
 @ocaml.doc("
  * Attempt to parse a given `string`, discarding the ParseError and returning a

@@ -1,6 +1,3 @@
-@@uncurried
-@@uncurried.swap
-
 open BsBastet.Interface
 open! Relude.Globals
 
@@ -64,12 +61,12 @@ module ResultE = Result.WithError({
  * A parser is a function from a position and string, which products either a successful parse
  * with some value and the rest of the string, or a parse error and position.
  ")
-type t<'a> = Parser(PosString.t => Belt.Result.t<success<'a>, error>)
+type t<'a> = Parser(PosString.t => Result.t<success<'a>, error>)
 
 @ocaml.doc("
 Unwraps a Parser into the raw parse function
 ")
-let unParser: 'a. (PosString.t, t<'a>) => Belt.Result.t<success<'a>, error> = (
+let unParser: 'a. (PosString.t, t<'a>) => Result.t<success<'a>, error> = (
   posString,
   Parser(p),
 ) => p(posString)
@@ -77,7 +74,7 @@ let unParser: 'a. (PosString.t, t<'a>) => Belt.Result.t<success<'a>, error> = (
 @ocaml.doc("
 Runs a parser to produce either a value or error.
 ")
-let runParser: 'a. (string, t<'a>) => Belt.Result.t<'a, ParseError.t> = (input, Parser(p)) => {
+let runParser: 'a. (string, t<'a>) => Result.t<'a, ParseError.t> = (input, Parser(p)) => {
   let result = p({str: input, pos: 0})
   switch result {
   | Ok({result}) => Ok(result)
@@ -153,7 +150,7 @@ include Relude.Extensions.Apply.ApplyExtensions(Apply)
 @ocaml.doc("
 Lift a pure value into a parser.
 ")
-let pure: 'a. 'a => t<'a> = a => Parser(posString => Belt.Result.Ok({result: a, suffix: posString}))
+let pure: 'a. 'a => t<'a> = a => Parser(posString => Result.Ok({result: a, suffix: posString}))
 
 @ocaml.doc("
  * A parser that produces a pure unit () value regardless of the input
@@ -367,11 +364,11 @@ let lookAheadNot: 'a. t<'a> => t<unit> = (Parser(p)) => Parser(
   posString =>
     switch p(posString) {
     | Ok(_) =>
-      Belt.Result.Error({
+      Result.Error({
         pos: posString.pos,
         error: ParseError.make("Expected look ahead to fail"),
       })
-    | Error(_) => Belt.Result.Ok({suffix: posString, result: ()})
+    | Error(_) => Result.Ok({suffix: posString, result: ()})
     },
 )
 
@@ -1024,7 +1021,7 @@ Matches a positive short (0-255)
 let anyUnsignedShort: t<int> = {
   tries(
     anyPositiveInt
-    ->(filter(i => i <= 255, _))
+    ->filter(i => i <= 255, _)
     ->\"<?>"("Expected a positive short (0 - 255)"),
   )
 }
@@ -1069,7 +1066,7 @@ let anyHexDigit: t<string> = \"<?>"(
 Matches any hex digit except \"0\"
  ")
 let anyNonZeroHexDigit: t<string> =
-  anyHexDigit->(filter(c => c != "0", _))->\"<?>"("Expected any non-zero hex digit")
+  anyHexDigit->filter(c => c != "0", _)->\"<?>"("Expected any non-zero hex digit")
 
 @ocaml.doc("
 Matches the given regular expression.
@@ -1096,12 +1093,11 @@ let regex: RegExp.t => t<string> = regex => Parser(
     switch resultOpt {
     | None => Error({error: parseError(), pos})
     | Some(result) =>
-
       Array.head(result)
-      ->(Option.flatMap(x => x, _))
+      ->Option.flatMap(x => x, _)
       ->Option.foldLazy(
-        () => Belt.Result.Error({error: parseError(), pos}),
-        match_ => Belt.Result.Ok({
+        () => Result.Error({error: parseError(), pos}),
+        match_ => Result.Ok({
           result: match_,
           suffix: {
             str,
@@ -1154,7 +1150,7 @@ Matches a decimal that starts with an - sign
  ")
 let anyNegativeDecimal: t<string> =
   (str("-"), anyUnsignedDecimal)
-  ->(mapTuple2(String.concat, _))
+  ->mapTuple2(String.concat, _)
   ->\"<?>"("Expected a negative decimal")
 
 @ocaml.doc("

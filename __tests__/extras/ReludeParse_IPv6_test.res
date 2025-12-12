@@ -1,6 +1,3 @@
-@@uncurried
-@@uncurried.swap
-
 open Jest
 open Expect
 open TestUtils
@@ -82,7 +79,7 @@ describe("ReludeParse_IPv6", () => {
       ("ffff::ffff:ffff:ffff", IPv6.unsafeFromInts(65535, 0, 0, 0, 0, 65535, 65535, 65535), 20),
       ("ffff::ffff:ffff", IPv6.unsafeFromInts(65535, 0, 0, 0, 0, 0, 65535, 65535), 15),
     },
-    ((str, exp, pos)) => testParse(\"<*"(IPv6.parser, P.eof), str, exp, {pos, str}),
+    ((str, exp, pos)) => \"<*"(IPv6.parser, P.eof)->testParse(str, exp, {pos, str}),
   )
 
   testAll(

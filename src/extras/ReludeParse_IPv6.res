@@ -1,7 +1,4 @@
-@@uncurried
-@@uncurried.swap
-
-module CoreInt = Int
+module Stdlib_Int = Int
 open! Relude.Globals
 module P = ReludeParse_Parser
 open P
@@ -24,7 +21,7 @@ let show: t => string = x =>
   | IPv6(0, 0, 0, 0, 0, 0, 0, 1) => "::1"
   | IPv6(a, b, c, d, e, f, g, h) =>
     list{a, b, c, d, e, f, g, h}
-    ->(List.map(x => CoreInt.toString(x, ~radix=16,), _))
+    ->List.map(x => Stdlib_Int.toString(x, ~radix=16), _)
     ->List.String.joinWith(":", _)
   }
 
@@ -51,7 +48,7 @@ let oneZeroPadGroup = {
 }
 let nonZeroPaddedGroup: P.t<int> = {
   (anyNonZeroHexDigit, timesMax(3, anyHexDigit)->\"<$$>"(List.String.join))
-  ->(mapTuple2((first, rest) => first ++ rest, _))
+  ->mapTuple2((first, rest) => first ++ rest, _)
   ->\"<$$>"(hexDigits => int_of_string("0x" ++ hexDigits))
 }
 
@@ -108,7 +105,7 @@ let loopbackAbbreviated = str("::1")->\"<$$>"(const(loopback, _))
 
 let parser: P.t<t> = loopbackAbbreviated->\"<|>"(groups)
 
-let parse: string => Belt.Result.t<t, P.ParseError.t> = str => P.runParser(str, parser)
+let parse: string => Result.t<t, P.ParseError.t> = str => P.runParser(str, parser)
 
 let parseOption: string => option<t> = \">>"(parse, Result.getOk, _)
 

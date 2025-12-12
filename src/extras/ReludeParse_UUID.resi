@@ -1,6 +1,3 @@
-@@uncurried
-@@uncurried.swap
-
 @ocaml.doc("
  * UUID.t represents a universally unique identifier, made up of 32 hexadecimal
  * digits in the format `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`. Its
@@ -23,7 +20,7 @@ let parser: ReludeParse_Parser.t<t>
  * Attempt to parse a given `string` into a `UUID.t`, possibly failing with a
  * ParseError.
  ")
-let parse: string => Belt.Result.t<t, ReludeParse_Parser.ParseError.t>
+let parse: string => Result.t<t, ReludeParse_Parser.ParseError.t>
 
 @ocaml.doc("
  * Attempt to parse a given `string`, discarding the ParseError and returning a

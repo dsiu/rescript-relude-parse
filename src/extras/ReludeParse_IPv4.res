@@ -1,6 +1,3 @@
-@@uncurried
-@@uncurried.swap
-
 open! Relude.Globals
 module Parser = ReludeParse_Parser
 
@@ -19,20 +16,20 @@ let parser: Parser.t<t> = Parser.mapTuple4(
   {
     open Parser
     (
-      \"<*"(anyPositiveShort, str(".")),
-      \"<*"(anyPositiveShort, str(".")),
-      \"<*"(anyPositiveShort, str(".")),
+      anyPositiveShort->\"<*"(str(".")),
+      anyPositiveShort->\"<*"(str(".")),
+      anyPositiveShort->\"<*"(str(".")),
       anyPositiveShort,
     )
   },
 )
 
-let parse: string => Belt.Result.t<t, Parser.ParseError.t> = str => Parser.runParser(str, parser)
+let parse: string => Result.t<t, Parser.ParseError.t> = str => Parser.runParser(str, parser)
 
 let parseOption: string => option<t> = \">>"(parse, Result.getOk, _)
 
 let unsafeFromString: string => t = str =>
-  Result.fold(e => failwith(Parser.ParseError.show(e)), id, parse(str))
+  parse(str)->Result.fold(e => failwith(Parser.ParseError.show(e)), id, _)
 
 let unsafeFromInts: (int, int, int, int) => t = (first, second, third, fourth) =>
   unsafeFromString(show(IPv4(first, second, third, fourth)))

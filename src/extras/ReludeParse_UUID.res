@@ -1,6 +1,3 @@
-@@uncurried
-@@uncurried.swap
-
 open! Relude.Globals
 module Parser = ReludeParse_Parser
 
@@ -35,7 +32,7 @@ let parser: Parser.t<t> = {
   ->\"<*>"(hexDigits(12))
 }
 
-let parse: string => Belt.Result.t<t, Parser.ParseError.t> = str => Parser.runParser(str, parser)
+let parse: string => Result.t<t, Parser.ParseError.t> = str => Parser.runParser(str, parser)
 
 let parseOption: string => option<t> = \">>"(parse, Result.getOk, _)
 

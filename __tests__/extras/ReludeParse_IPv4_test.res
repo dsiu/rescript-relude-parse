@@ -1,6 +1,3 @@
-@@uncurried
-@@uncurried.swap
-
 open Jest
 open Expect
 open TestUtils
@@ -18,7 +15,7 @@ describe("ReludeParse_IPv4", () => {
       ("127.0.0.1", IPv4.unsafeFromInts(127, 0, 0, 1), 9),
       ("255.255.255.255", IPv4.unsafeFromInts(255, 255, 255, 255), 15),
     },
-    ((str, exp, pos)) => testParse(IPv4.parser, str, exp, {pos, str}),
+    ((str, exp, pos)) => IPv4.parser->testParse(str, exp, {pos, str}),
   )
 
   testAll(
