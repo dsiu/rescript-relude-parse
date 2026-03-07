@@ -24,7 +24,7 @@
   },
   "homepage": "https://github.com/reazen/relude-parse#readme",
   "peerDependencies": {
-    "rescript": "^12.2.0-rc.1",
+    "rescript": "^12.2.0",
     "rescript-bastet": "*",
     "rescript-relude": "*"
   },
@@ -34,7 +34,7 @@
     "@glennsl/rescript-jest": "github:dsiu/rescript-jest#rescript-v12-wip",
     "babel-jest": "^27.3.1",
     "jest": "^27.3.1",
-    "rescript": "^12.2.0-rc.1",
+    "rescript": "^12.2.0",
     "rescript-bastet": "github:dsiu/rescript-bastet#rescript-v12",
     "rescript-relude": "github:dsiu/rescript-relude#rescript-v12"
   },
@@ -77,5 +77,5 @@
       "mjs"
     ]
   },
-  "packageManager": "yarn@4.12.0"
+  "packageManager": "yarn@4.13.0"
 }
